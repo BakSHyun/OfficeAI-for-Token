@@ -1,0 +1,26 @@
+{
+  "repositories": [
+    {
+      "id": "gtsn-backend",
+      "stack": "laravel",
+      "rootEnv": "GTSN_BACKEND_ROOT",
+      "pathCandidates": {
+        "win32": ["E:\\dev\\app\\gtsn-backend"],
+        "darwin": ["~/dev/app/gtsn-backend", "~/Projects/gtsn-backend"],
+        "linux": ["~/dev/app/gtsn-backend"]
+      },
+      "rulesFile": "AGENTS.md"
+    },
+    {
+      "id": "gtsn-admin",
+      "stack": "vite-react",
+      "rootEnv": "GTSN_ADMIN_ROOT",
+      "pathCandidates": {
+        "win32": ["E:\\dev\\app\\gtsn-admin"],
+        "darwin": ["~/dev/app/gtsn-admin", "~/Projects/gtsn-admin"],
+        "linux": ["~/dev/app/gtsn-admin"]
+      },
+      "rulesFile": "AGENTS.md"
+    }
+  ]
+}

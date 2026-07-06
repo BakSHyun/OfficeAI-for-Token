@@ -1,0 +1,41 @@
+{
+  "outputDir": ".officeai",
+  "maxFileBytes": 1048576,
+  "maxTranscriptEventsPerFile": 100,
+  "projectAliases": {
+    "Users-me-dev-app-gtsn-backend": "gtsn-backend",
+    "Users-me-dev-app-gtsn-admin": "gtsn-admin"
+  },
+  "sources": [
+    {
+      "kind": "markdown",
+      "label": "obsidian",
+      "root": "~/Documents/Obsidian Vault"
+    },
+    {
+      "kind": "cursor-plans",
+      "label": "cursor-plans",
+      "root": "~/.cursor/plans"
+    },
+    {
+      "kind": "cursor-transcripts",
+      "label": "cursor-history",
+      "root": "~/.cursor/projects"
+    },
+    {
+      "kind": "cursor-workspaces",
+      "label": "cursor-workspaces",
+      "root": "~/Library/Application Support/Cursor/User/workspaceStorage"
+    },
+    {
+      "kind": "git",
+      "label": "gtsn-backend",
+      "root": "${GTSN_BACKEND_ROOT}"
+    },
+    {
+      "kind": "git",
+      "label": "gtsn-admin",
+      "root": "${GTSN_ADMIN_ROOT}"
+    }
+  ]
+}

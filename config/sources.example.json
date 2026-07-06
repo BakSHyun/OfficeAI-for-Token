@@ -1,0 +1,35 @@
+{
+  "outputDir": ".officeai",
+  "maxFileBytes": 1048576,
+  "maxTranscriptEventsPerFile": 100,
+  "projectAliases": {
+    "encoded-cursor-project-name": "canonical-project-name"
+  },
+  "sources": [
+    {
+      "kind": "markdown",
+      "label": "obsidian",
+      "root": "C:\\path\\to\\Obsidian Vault"
+    },
+    {
+      "kind": "cursor-plans",
+      "label": "cursor-plans",
+      "root": "C:\\Users\\<user>\\.cursor\\plans"
+    },
+    {
+      "kind": "cursor-transcripts",
+      "label": "cursor-history",
+      "root": "C:\\Users\\<user>\\.cursor\\projects"
+    },
+    {
+      "kind": "cursor-workspaces",
+      "label": "cursor-workspaces",
+      "root": "C:\\Users\\<user>\\AppData\\Roaming\\Cursor\\User\\workspaceStorage"
+    },
+    {
+      "kind": "git",
+      "label": "main-backend",
+      "root": "D:\\path\\to\\repository"
+    }
+  ]
+}

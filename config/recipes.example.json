@@ -1,0 +1,23 @@
+{
+  "planning": {
+    "contextBudget": 12000,
+    "roles": ["context-curator", "planner", "skeptic", "reporter"],
+    "parallel": ["research", "constraints", "prior-work"],
+    "requiredEvidence": ["source-ref", "decision-log", "acceptance-criteria"],
+    "approvalBefore": ["publish", "send", "create-ticket"]
+  },
+  "development": {
+    "contextBudget": 18000,
+    "roles": ["context-curator", "planner", "developer", "verifier", "reporter"],
+    "parallel": ["repository-map", "related-history", "test-baseline"],
+    "requiredEvidence": ["diff", "typecheck", "tests", "scope-check"],
+    "approvalBefore": ["push", "merge", "deploy", "database-write"]
+  },
+  "pm": {
+    "contextBudget": 10000,
+    "roles": ["context-curator", "pm", "risk-reviewer", "reporter"],
+    "parallel": ["current-state", "dependencies", "recent-decisions"],
+    "requiredEvidence": ["owner", "deadline", "dependency", "source-ref"],
+    "approvalBefore": ["notify-external", "change-deadline", "assign-person"]
+  }
+}
