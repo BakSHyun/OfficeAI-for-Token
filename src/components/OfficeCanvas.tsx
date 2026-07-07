@@ -12,35 +12,18 @@ type OfficeCanvasProps = {
   agents: Agent[];
   selectedAgentId: string;
   onSelectAgent: (id: string) => void;
+  /** true면 외부 패널/툴바 없이 씬만 렌더 (App의 통합 패널에 삽입용) */
+  embedded?: boolean;
 };
 
 export function OfficeCanvas({
   agents,
   selectedAgentId,
   onSelectAgent,
+  embedded = false,
 }: OfficeCanvasProps) {
-  return (
-    <section className="office-panel" aria-label="AI 에이전트 오피스">
-      <div className="office-toolbar">
-        <div>
-          <Radio size={15} />
-          <span>라이브 오피스</span>
-          <small>7명 접속</small>
-        </div>
-        <div>
-          <button aria-label="소리" type="button">
-            <Volume2 size={15} />
-          </button>
-          <button aria-label="일시 정지" type="button">
-            <CirclePause size={15} />
-          </button>
-          <button aria-label="전체 화면" type="button">
-            <Maximize2 size={15} />
-          </button>
-        </div>
-      </div>
-
-      <div className="office-scene">
+  const scene = (
+    <div className="office-scene">
         <img
           alt="기획, 개발, PM, 검증, 휴식 공간으로 구성된 AI 에이전트 오피스"
           src="/assets/office-diorama.png"
@@ -98,6 +81,31 @@ export function OfficeCanvas({
           </span>
         </div>
       </div>
+  );
+
+  if (embedded) return scene;
+
+  return (
+    <section className="office-panel" aria-label="AI 에이전트 오피스">
+      <div className="office-toolbar">
+        <div>
+          <Radio size={15} />
+          <span>라이브 오피스</span>
+          <small>{agents.length}명 접속</small>
+        </div>
+        <div>
+          <button aria-label="소리" type="button">
+            <Volume2 size={15} />
+          </button>
+          <button aria-label="일시 정지" type="button">
+            <CirclePause size={15} />
+          </button>
+          <button aria-label="전체 화면" type="button">
+            <Maximize2 size={15} />
+          </button>
+        </div>
+      </div>
+      {scene}
     </section>
   );
 }

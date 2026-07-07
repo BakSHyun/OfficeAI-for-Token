@@ -1,17 +1,22 @@
 # Office AI Command Center
 
-한 문장으로 업무를 지시하면 기획·개발·PM·검증 역할로 분해하고, 난이도와 위험도에 맞춰 모델을 배정한 뒤 근거와 비용을 함께 추적하는 개인용 AI 업무 관제 화면입니다.
+한 문장으로 업무를 지시하면 통괄(Orchestrator)-분배(Dispatcher)-실행(Executor)-비판(Critic: 임원/유저/CFO/CTO) 노드 AI가 작업을 DAG로 분해해 동시 실행하고, 유닛마다 딱 필요한 모델 티어를 배정해 토큰을 최적화하는 AI 업무 오케스트레이션 시스템입니다. Electron으로 Mac/Windows에 설치됩니다.
+
+> **개발을 이어서 하려면 먼저 `docs/dev-guide.md`를 읽으세요.** 남은 작업 카드와 규칙이 정리되어 있습니다.
 
 ## 실행
 
 ```bash
 npm install
-npm run dev
+npm run dev        # 브라우저 UI (데모 이벤트 드라이버)
+npm run app:dev    # Electron 앱 (실제 오케스트레이션 엔진)
+npm run core:run -- "골프장 예약 기능 기획해줘" --mock   # 엔진 헤드리스 실행
+npm run core:test  # 코어 테스트
 ```
 
-프로덕션 빌드는 `npm run build`, 정적 검사는 `npm run lint`로 실행합니다.
+프로덕션 빌드는 `npm run build`(웹) / `npm run app:package:win|mac`(설치본), 정적 검사는 `npm run lint`.
 
-현재 구현은 프론트엔드 관제 MVP와 로컬 업무 메모리 코어 MVP로 구성됩니다.
+LLM 연결은 `config/providers.example.json`을 `config/providers.local.json`으로 복사해 티어별 provider(openai/anthropic/codex-cli/mock)와 API 키를 설정합니다.
 
 ## 코어 실행
 

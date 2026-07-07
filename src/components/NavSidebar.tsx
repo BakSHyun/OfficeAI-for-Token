@@ -25,9 +25,10 @@ const icons = [
 type NavSidebarProps = {
   active: string;
   onChange: (item: string) => void;
+  approvalCount?: number;
 };
 
-export function NavSidebar({ active, onChange }: NavSidebarProps) {
+export function NavSidebar({ active, onChange, approvalCount = 0 }: NavSidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -52,7 +53,9 @@ export function NavSidebar({ active, onChange }: NavSidebarProps) {
             >
               <Icon size={17} strokeWidth={1.8} />
               <span>{item}</span>
-              {item === "승인 대기" ? <em>2</em> : null}
+              {item === "승인 대기" && approvalCount > 0 ? (
+                <em>{approvalCount}</em>
+              ) : null}
             </button>
           );
         })}

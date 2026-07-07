@@ -7,27 +7,48 @@ import {
 } from "lucide-react";
 import type { Activity } from "../types";
 
+const DAILY_TOKEN_BUDGET = 2_000_000;
+
+function formatTokens(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return `${value}`;
+}
+
 type ActivityRailProps = {
   activities: Activity[];
+  usage?: { inputTokens: number; outputTokens: number; costUsd: number };
+  approvalCount?: number;
 };
 
-export function ActivityRail({ activities }: ActivityRailProps) {
+export function ActivityRail({
+  activities,
+  usage,
+  approvalCount = 0,
+}: ActivityRailProps) {
+  const totalTokens = usage ? usage.inputTokens + usage.outputTokens : 0;
+  const tokenRatio = Math.min(100, (totalTokens / DAILY_TOKEN_BUDGET) * 100);
   return (
     <section className="activity-rail">
       <div className="usage-panel">
         <div className="rail-heading">
           <h2>실시간 사용 현황</h2>
-          <span>10:18 기준</span>
+          <span>이번 세션</span>
         </div>
         <div className="usage-row">
           <span>토큰 사용량</span>
-          <strong>1.24M <small>/ 2.00M</small></strong>
-          <div><i style={{ width: "62%" }} /></div>
+          <strong>
+            {formatTokens(totalTokens)}{" "}
+            <small>/ {formatTokens(DAILY_TOKEN_BUDGET)}</small>
+          </strong>
+          <div><i style={{ width: `${tokenRatio}%` }} /></div>
         </div>
         <div className="usage-row">
-          <span>예상 비용</span>
-          <strong>₩21,450 <small>/ ₩35,000</small></strong>
-          <div><i style={{ width: "61%" }} /></div>
+          <span>사용 비용</span>
+          <strong>
+            ${usage ? usage.costUsd.toFixed(4) : "0.0000"}
+          </strong>
+          <div><i style={{ width: `${Math.min(100, (usage?.costUsd ?? 0) * 20)}%` }} /></div>
         </div>
       </div>
 
@@ -59,24 +80,25 @@ export function ActivityRail({ activities }: ActivityRailProps) {
       <div className="approval-panel">
         <div className="rail-heading">
           <h2>승인 대기</h2>
-          <span>2건</span>
+          <span>{approvalCount}건</span>
         </div>
-        <div className="approval-item">
-          <Clock3 size={16} />
-          <div>
-            <strong>신규 기능 출시 범위 확정</strong>
-            <small>PM냥 · 6분 전</small>
+        {approvalCount === 0 ? (
+          <div className="approval-item">
+            <Clock3 size={16} />
+            <div>
+              <strong>대기 중인 결정이 없습니다</strong>
+              <small>승인이 필요하면 여기에 표시됩니다</small>
+            </div>
           </div>
-          <button type="button">검토</button>
-        </div>
-        <div className="approval-item">
-          <CircleDollarSign size={16} />
-          <div>
-            <strong>예산 초과 가능성 검토</strong>
-            <small>검증냥 · 10분 전</small>
+        ) : (
+          <div className="approval-item">
+            <CircleDollarSign size={16} />
+            <div>
+              <strong>{approvalCount}건의 결정이 기다립니다</strong>
+              <small>좌측 “승인 대기” 메뉴에서 검토하세요</small>
+            </div>
           </div>
-          <button type="button">검토</button>
-        </div>
+        )}
       </div>
 
       <div className="verification-panel">

@@ -1,0 +1,34 @@
+{
+  "concurrency": 4,
+  "tiers": {
+    "local": {
+      "provider": "codex-cli",
+      "model": "default",
+      "inputCostPerMillion": 0,
+      "outputCostPerMillion": 0
+    },
+    "economy": {
+      "provider": "openai",
+      "model": "gpt-4.1-mini",
+      "inputCostPerMillion": 0.4,
+      "outputCostPerMillion": 1.6
+    },
+    "standard": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "inputCostPerMillion": 3,
+      "outputCostPerMillion": 15
+    },
+    "premium": {
+      "provider": "anthropic",
+      "model": "claude-opus-4-5",
+      "inputCostPerMillion": 15,
+      "outputCostPerMillion": 75
+    }
+  },
+  "apiKeys": {
+    "openai": "env:OPENAI_API_KEY",
+    "anthropic": "env:ANTHROPIC_API_KEY"
+  },
+  "baseUrls": {}
+}
