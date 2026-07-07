@@ -5,9 +5,11 @@ import {
   Clock3,
   ShieldCheck,
 } from "lucide-react";
+import type { BudgetScopeState, CriticVerdict, SavingsSummary } from "../state/bridge-types";
+import { labelCritic } from "../../shared/role-labels";
+import { formatCost } from "../state/format-cost";
+import { formatSavingsMessage } from "../state/savings";
 import type { Activity } from "../types";
-
-const DAILY_TOKEN_BUDGET = 2_000_000;
 
 function formatTokens(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
@@ -15,41 +17,71 @@ function formatTokens(value: number) {
   return `${value}`;
 }
 
+function hasBudgetWarning(scopes: BudgetScopeState[]) {
+  return scopes.some(
+    (scope) =>
+      scope.budgetTokens > 0 && scope.usedTokens / scope.budgetTokens >= 0.8,
+  );
+}
+
 type ActivityRailProps = {
   activities: Activity[];
   usage?: { inputTokens: number; outputTokens: number; costUsd: number };
   approvalCount?: number;
+  dailyTokenBudget?: number;
+  budgetScopes?: BudgetScopeState[];
+  savings?: SavingsSummary | null;
+  verdicts?: CriticVerdict[];
 };
 
 export function ActivityRail({
   activities,
   usage,
   approvalCount = 0,
+  dailyTokenBudget = 2_000_000,
+  budgetScopes = [],
+  savings = null,
+  verdicts = [],
 }: ActivityRailProps) {
   const totalTokens = usage ? usage.inputTokens + usage.outputTokens : 0;
-  const tokenRatio = Math.min(100, (totalTokens / DAILY_TOKEN_BUDGET) * 100);
+  const tokenRatio = Math.min(100, (totalTokens / dailyTokenBudget) * 100);
+  const budgetWarning = hasBudgetWarning(budgetScopes);
+  const costUsd = usage?.costUsd ?? 0;
+  const savingsMessage = savings ? formatSavingsMessage(savings) : null;
   return (
     <section className="activity-rail">
       <div className="usage-panel">
         <div className="rail-heading">
           <h2>실시간 사용 현황</h2>
-          <span>이번 세션</span>
+          <span>
+            이번 세션
+            {budgetWarning ? (
+              <span className="rail-status-pill warn">예산 80%</span>
+            ) : null}
+          </span>
         </div>
         <div className="usage-row">
           <span>토큰 사용량</span>
           <strong>
             {formatTokens(totalTokens)}{" "}
-            <small>/ {formatTokens(DAILY_TOKEN_BUDGET)}</small>
+            <small>/ {formatTokens(dailyTokenBudget)}</small>
           </strong>
           <div><i style={{ width: `${tokenRatio}%` }} /></div>
         </div>
         <div className="usage-row">
           <span>사용 비용</span>
-          <strong>
-            ${usage ? usage.costUsd.toFixed(4) : "0.0000"}
-          </strong>
-          <div><i style={{ width: `${Math.min(100, (usage?.costUsd ?? 0) * 20)}%` }} /></div>
+          <strong>{formatCost(costUsd)}</strong>
+          <div><i style={{ width: `${Math.min(100, costUsd * 20)}%` }} /></div>
         </div>
+        {savingsMessage && savings && savings.savedPercent > 0 ? (
+          <div className="usage-row usage-row-savings">
+            <span>스마트 배정 절약</span>
+            <strong>
+              {savings.savedPercent}%
+              <small>{savingsMessage}</small>
+            </strong>
+          </div>
+        ) : null}
       </div>
 
       <div className="activity-panel">
@@ -106,23 +138,26 @@ export function ActivityRail({
           <h2>최근 검증 결과</h2>
           <ShieldCheck size={16} />
         </div>
-        <ul>
-          <li>
-            <CheckCircle2 size={14} />
-            기능 흐름 테스트
-            <span>통과</span>
-          </li>
-          <li>
-            <CheckCircle2 size={14} />
-            보안 취약점 스캔
-            <span>통과</span>
-          </li>
-          <li className="failed">
-            <AlertTriangle size={14} />
-            외부 유효성 테스트
-            <span>실패</span>
-          </li>
-        </ul>
+        {verdicts.length === 0 ? (
+          <p className="rail-empty-note">검토가 완료되면 결과가 여기에 표시됩니다.</p>
+        ) : (
+          <ul>
+            {verdicts.slice(0, 6).map((verdict, index) => {
+              const passed = verdict.verdict === "approve";
+              return (
+                <li className={passed ? undefined : "failed"} key={`${verdict.persona}-${index}`}>
+                  {passed ? (
+                    <CheckCircle2 size={14} />
+                  ) : (
+                    <AlertTriangle size={14} />
+                  )}
+                  {labelCritic(verdict.persona)} ({verdict.score}점)
+                  <span>{passed ? "통과" : "반려"}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </section>
   );

@@ -53,6 +53,16 @@ export function redactSensitiveText(input: string): RedactionResult {
   };
 }
 
+/** 객체를 JSON으로 직렬화한 뒤 패턴 기반 redaction을 적용한다. */
+export function redactSensitiveJson(value: unknown): unknown {
+  const { text } = redactSensitiveText(JSON.stringify(value));
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
 export function classifySensitivity(redactionCount: number): SensitivityLabel {
   if (redactionCount > 0) return "restricted";
   return "internal";

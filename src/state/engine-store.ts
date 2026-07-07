@@ -43,6 +43,13 @@ export type RunState = {
   startedAt: string;
 };
 
+export type UsageCostRow = {
+  runId: string;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+};
+
 type EngineState = {
   connected: boolean;
   runs: Record<string, RunState>;
@@ -52,6 +59,7 @@ type EngineState = {
   approvals: ApprovalRequest[];
   budget: BudgetScopeState[];
   usage: { inputTokens: number; outputTokens: number; costUsd: number };
+  usageRows: UsageCostRow[];
   applyEvent(event: RunEvent): void;
   setConnected(connected: boolean): void;
   setApprovals(approvals: ApprovalRequest[]): void;
@@ -61,6 +69,16 @@ type EngineState = {
 };
 
 const MAX_ACTIVITIES = 60;
+
+let hydratingLedger = false;
+
+export function setHydratingLedger(value: boolean) {
+  hydratingLedger = value;
+}
+
+function isHydratingLedger() {
+  return hydratingLedger;
+}
 
 let activitySequence = 0;
 function activity(
@@ -86,6 +104,7 @@ export const useEngineStore = create<EngineState>((set, get) => ({
   approvals: [],
   budget: [],
   usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+  usageRows: [],
 
   setConnected: (connected) => set({ connected }),
   setApprovals: (approvals) => set({ approvals }),
@@ -102,12 +121,15 @@ export const useEngineStore = create<EngineState>((set, get) => ({
       activities: [],
       approvals: [],
       budget: [],
+      usageRows: [],
     }),
 
   applyEvent: (event) => {
     const state = get();
     const push = (entry: ActivityEntry) =>
-      [entry, ...state.activities].slice(0, MAX_ACTIVITIES);
+      isHydratingLedger()
+        ? state.activities
+        : [entry, ...state.activities].slice(0, MAX_ACTIVITIES);
 
     switch (event.type) {
       case "run:started":
@@ -303,6 +325,15 @@ export const useEngineStore = create<EngineState>((set, get) => ({
             outputTokens: state.usage.outputTokens + event.usage.outputTokens,
             costUsd: state.usage.costUsd + event.usage.costUsd,
           },
+          usageRows: [
+            ...state.usageRows,
+            {
+              runId: event.runId,
+              inputTokens: event.usage.inputTokens,
+              outputTokens: event.usage.outputTokens,
+              costUsd: event.usage.costUsd,
+            },
+          ],
           nodes: node
             ? {
                 ...state.nodes,

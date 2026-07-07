@@ -34,6 +34,13 @@ export type TierBinding = {
   outputCostPerMillion: number;
 };
 
+export type CursorAgentCliOptions = {
+  /** 실행 파일. 기본 `agent` */
+  command?: string;
+  /** command 앞 서브커맨드. 예: `cursor` + `["agent"]` */
+  commandPrefixArgs?: string[];
+};
+
 export type ProviderConfig = {
   /** DAG 스케줄러의 최대 동시 LLM 호출 수 */
   concurrency: number;
@@ -42,4 +49,6 @@ export type ProviderConfig = {
   apiKeys?: Record<string, string>;
   /** OpenAI 호환 엔드포인트 오버라이드 (로컬 모델 등) */
   baseUrls?: Record<string, string>;
+  /** cursor-agent-cli provider 실행 옵션 */
+  cursorAgentCli?: CursorAgentCliOptions;
 };

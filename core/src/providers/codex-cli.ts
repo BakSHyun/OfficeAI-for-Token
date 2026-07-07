@@ -1,4 +1,5 @@
 import { estimateTokens } from "../context/token-estimator";
+import { parseCodexModelField } from "../../../shared/provider-model-catalog";
 import { runProcess } from "../process/process-runner";
 import type { LLMProvider, LLMRequest, LLMResponse } from "./contracts";
 
@@ -26,8 +27,12 @@ export function createCodexCliProvider(options?: {
         .join("\n\n");
 
       const args = ["exec", "--ephemeral", "--json", "-s", "read-only"];
-      if (request.model && request.model !== "default") {
-        args.push("-m", request.model);
+      const { modelId, effort } = parseCodexModelField(request.model);
+      if (modelId && modelId !== "default") {
+        args.push("-m", modelId);
+      }
+      if (effort && effort !== "medium") {
+        args.push("-c", `model_reasoning_effort=${effort}`);
       }
       args.push("-");
 
@@ -55,7 +60,7 @@ export function createCodexCliProvider(options?: {
           inputTokens: parsed.inputTokens ?? estimateTokens(prompt),
           outputTokens: parsed.outputTokens ?? estimateTokens(parsed.text),
         },
-        model: request.model,
+        model: modelId || request.model,
         provider: "codex-cli",
       };
     },

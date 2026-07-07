@@ -5,6 +5,7 @@ import { estimateTokens } from "../context/token-estimator";
 import { createTaskEnvelope } from "../intake/task-intake";
 import type { WorkProfile } from "../memory/work-profile";
 import type { LLMMessage } from "../providers/contracts";
+import { LLMAuthError } from "../providers/retry";
 import type { ProviderRegistry } from "../providers/registry";
 import type { BudgetManager } from "../budget/budget-manager";
 import type { ApprovalGate } from "./approval-gate";
@@ -132,13 +133,33 @@ export function createOrchestrator(
     }
 
     const { provider, binding } = registry.resolveTier(tier);
-    const response = await provider.complete({
-      tier,
-      model: binding.model,
-      messages: input.messages,
-      maxOutputTokens: input.maxOutputTokens,
-      jsonSchema: input.jsonSchema,
-    });
+    let response;
+    try {
+      response = await provider.complete({
+        tier,
+        model: binding.model,
+        messages: input.messages,
+        maxOutputTokens: input.maxOutputTokens,
+        jsonSchema: input.jsonSchema,
+      });
+    } catch (error) {
+      if (error instanceof LLMAuthError) {
+        bus.emit({
+          type: "node:blocked",
+          runId: input.runId,
+          nodeId: input.node.id,
+          reason: error.message,
+          at: now(),
+        });
+        await gate.request(
+          input.runId,
+          "budget-escalation",
+          `LLM API 설정 오류 — 키와 provider 설정을 확인하세요. ${error.message}`,
+          { unitId: input.unitId, tier },
+        );
+      }
+      throw error;
+    }
     const usage: LLMUsage = {
       inputTokens: response.usage.inputTokens,
       outputTokens: response.usage.outputTokens,
@@ -325,7 +346,10 @@ export function createOrchestrator(
         const parsed = parseJsonLenient<typeof output>(result.text);
         output = {
           summary: parsed.summary || unit.title,
-          deliverable: parsed.deliverable || result.text,
+          deliverable:
+            (typeof parsed.deliverable === "string" && parsed.deliverable.trim()) ||
+            result.text.trim() ||
+            "",
           evidence: Array.isArray(parsed.evidence) ? parsed.evidence : [],
         };
       } catch {
@@ -493,7 +517,10 @@ export function createOrchestrator(
                 title: unit.title,
                 role: unit.role,
                 tier: unit.tier,
+                model: unit.model,
+                provider: registry.config.tiers[unit.tier].provider,
                 critics: unit.critics,
+                expectedOutput: unit.expectedOutput,
               })),
               estimatedTokens: plan.estimatedTokens,
             },

@@ -2,7 +2,7 @@
   "concurrency": 4,
   "tiers": {
     "local": {
-      "provider": "codex-cli",
+      "provider": "cursor-agent-cli",
       "model": "default",
       "inputCostPerMillion": 0,
       "outputCostPerMillion": 0
@@ -30,5 +30,8 @@
     "openai": "env:OPENAI_API_KEY",
     "anthropic": "env:ANTHROPIC_API_KEY"
   },
-  "baseUrls": {}
+  "baseUrls": {
+    "lmstudio": "http://localhost:1234/v1"
+  },
+  "cursorAgentCli": {}
 }

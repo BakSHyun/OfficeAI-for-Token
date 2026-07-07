@@ -9,13 +9,15 @@ files:
 asarUnpack:
   - "**/*.node"
 npmRebuild: true
+win:
+  target:
+    - nsis
+  # 코드 사이닝: CSC_LINK, CSC_KEY_PASSWORD 환경 변수 — docs/release-guide.md
 mac:
   target:
     - dmg
   category: public.app-category.productivity
-win:
-  target:
-    - nsis
+  # notarization: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

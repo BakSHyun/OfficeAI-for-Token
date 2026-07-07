@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { KeyRound, Rocket, Sparkles } from "lucide-react";
+import { ConnectionGuide } from "./ConnectionGuide";
+import { loadStarred } from "../state/command-history";
 import { ONBOARDING_KEY } from "../state/onboarding";
 
 type OnboardingModalProps = {
@@ -18,6 +20,9 @@ export function OnboardingModal({ onFinish }: OnboardingModalProps) {
   const [anthropicKey, setAnthropicKey] = useState("");
   const [saving, setSaving] = useState(false);
   const bridge = window.officeai;
+  const starredCommands = loadStarred();
+  const quickCommands =
+    starredCommands.length > 0 ? starredCommands : exampleCommands;
 
   function finish(firstCommand?: string) {
     localStorage.setItem(ONBOARDING_KEY, "1");
@@ -76,6 +81,7 @@ export function OnboardingModal({ onFinish }: OnboardingModalProps) {
               키체인에 암호화되어 저장되며 외부로 전송되지 않습니다. 나중에
               설정에서 변경할 수 있습니다.
             </p>
+            <ConnectionGuide canSaveKeys={Boolean(bridge)} variant="compact" />
             {bridge ? (
               <div className="onboarding-keys">
                 <label>
@@ -122,9 +128,13 @@ export function OnboardingModal({ onFinish }: OnboardingModalProps) {
           <>
             <Rocket size={30} />
             <h1>첫 업무를 맡겨보세요</h1>
-            <p>아래 예시를 누르면 바로 시작합니다.</p>
+            <p>
+              {starredCommands.length > 0
+                ? "즐겨찾기한 명령을 누르면 바로 시작합니다."
+                : "아래 예시를 누르면 바로 시작합니다."}
+            </p>
             <div className="onboarding-examples">
-              {exampleCommands.map((command) => (
+              {quickCommands.map((command) => (
                 <button
                   key={command}
                   onClick={() => finish(command)}

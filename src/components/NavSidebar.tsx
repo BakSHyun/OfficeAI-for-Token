@@ -26,9 +26,24 @@ type NavSidebarProps = {
   active: string;
   onChange: (item: string) => void;
   approvalCount?: number;
+  connected?: boolean;
+  onlineCount?: number;
+  runningCount?: number;
 };
 
-export function NavSidebar({ active, onChange, approvalCount = 0 }: NavSidebarProps) {
+export function NavSidebar({
+  active,
+  onChange,
+  approvalCount = 0,
+  connected = false,
+  onlineCount = 0,
+  runningCount = 0,
+}: NavSidebarProps) {
+  const statusLabel = !connected
+    ? "엔진 연결 대기"
+    : runningCount > 0
+      ? "업무 실행 중"
+      : "정상 운영 중";
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -64,16 +79,16 @@ export function NavSidebar({ active, onChange, approvalCount = 0 }: NavSidebarPr
       <div className="system-card">
         <span className="eyebrow">시스템 상태</span>
         <div className="system-row">
-          <span className="status-dot running" />
-          정상 운영 중
+          <span className={connected ? "status-dot running" : "status-dot waiting"} />
+          {statusLabel}
         </div>
         <div className="system-stats">
           <div>
-            <strong>7</strong>
+            <strong>{onlineCount}</strong>
             <span>온라인</span>
           </div>
           <div>
-            <strong>3</strong>
+            <strong>{runningCount}</strong>
             <span>실행 중</span>
           </div>
         </div>

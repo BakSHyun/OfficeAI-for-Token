@@ -2,6 +2,7 @@
   "name": "office-ai-command-center",
   "private": true,
   "version": "0.1.0",
+  "description": "토큰 최적화 AI 업무 오케스트레이션 데스크톱 앱",
   "type": "module",
   "main": "out/main/main.js",
   "scripts": {
@@ -9,9 +10,9 @@
     "build": "tsc -b && vite build",
     "app:dev": "electron-vite dev",
     "app:build": "electron-vite build",
-    "app:package": "electron-vite build && electron-builder",
-    "app:package:win": "electron-vite build && electron-builder --win",
-    "app:package:mac": "electron-vite build && electron-builder --mac",
+    "app:package": "electron-vite build && node scripts/build-icons.mjs && electron-builder",
+    "app:package:win": "electron-vite build && node scripts/build-icons.mjs && electron-builder --win",
+    "app:package:mac": "electron-vite build && node scripts/build-icons.mjs && electron-builder --mac",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "eslint .",
     "core:scan": "tsx core/src/cli/scan.ts --config config/sources.local.json",
@@ -51,5 +52,29 @@
     "globals": "^15.14.0",
     "tsx": "^4.19.2",
     "typescript-eslint": "^8.18.2"
+  },
+  "build": {
+    "appId": "com.officeai.app",
+    "productName": "OfficeAI",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.icns"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

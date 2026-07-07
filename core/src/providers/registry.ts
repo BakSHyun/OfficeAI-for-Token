@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { ModelTier } from "../contracts";
 import { createAnthropicProvider } from "./anthropic";
 import { createCodexCliProvider } from "./codex-cli";
+import { createCursorAgentCliProvider } from "./cursor-agent-cli";
 import { createMockProvider } from "./mock";
 import { createOpenAIProvider } from "./openai";
 import type {
@@ -11,6 +12,7 @@ import type {
   ProviderConfig,
   TierBinding,
 } from "./contracts";
+import { createRetryProvider } from "./retry";
 
 export type ProviderRegistry = {
   config: ProviderConfig;
@@ -107,8 +109,21 @@ export function createProviderRegistry(
         }
         provider = createAnthropicProvider({ apiKey, baseUrl });
         break;
+      case "lmstudio": {
+        // LM Studio는 OpenAI 호환 로컬 서버. 키가 필요 없어 placeholder를 넣는다.
+        const localUrl = baseUrl ?? "http://localhost:1234/v1";
+        provider = createOpenAIProvider({
+          apiKey: apiKey ?? "lm-studio",
+          baseUrl: localUrl,
+          id: "lmstudio",
+        });
+        break;
+      }
       case "codex-cli":
         provider = createCodexCliProvider();
+        break;
+      case "cursor-agent-cli":
+        provider = createCursorAgentCliProvider(config.cursorAgentCli);
         break;
       case "mock":
         provider = createMockProvider();
@@ -120,12 +135,24 @@ export function createProviderRegistry(
     return provider;
   }
 
+  function resolveRawTier(tier: ModelTier) {
+    const binding = config.tiers[tier];
+    if (!binding) throw new Error(`티어 ${tier} 바인딩이 없습니다.`);
+    return { provider: instantiate(binding.provider), binding };
+  }
+
   return {
     config,
     resolveTier(tier: ModelTier) {
-      const binding = config.tiers[tier];
-      if (!binding) throw new Error(`티어 ${tier} 바인딩이 없습니다.`);
-      return { provider: instantiate(binding.provider), binding };
+      const { provider, binding } = resolveRawTier(tier);
+      return {
+        provider: createRetryProvider({
+          tier,
+          inner: provider,
+          resolveRawTier,
+        }),
+        binding,
+      };
     },
     costUsd(tier, usage) {
       const binding = config.tiers[tier];

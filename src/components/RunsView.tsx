@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { History } from "lucide-react";
+import { ScheduledTasksSection } from "./ScheduledTasksSection";
 import type { RecentRun } from "../state/bridge-types";
+import { formatCost } from "../state/format-cost";
 import type { RunState } from "../state/engine-store";
 
 type RunsViewProps = {
@@ -27,16 +29,7 @@ export function RunsView({ runs, onSelect }: RunsViewProps) {
   );
   const liveIds = new Set(liveRuns.map((run) => run.runId));
   const pastRuns = history.filter((run) => !liveIds.has(run.runId));
-
-  if (liveRuns.length === 0 && pastRuns.length === 0) {
-    return (
-      <section className="view-panel decision-empty">
-        <History size={34} strokeWidth={1.4} />
-        <h1>업무 이력이 없습니다</h1>
-        <p>첫 명령을 내리면 실행 이력과 토큰·비용이 여기에 쌓입니다.</p>
-      </section>
-    );
-  }
+  const hasRuns = liveRuns.length > 0 || pastRuns.length > 0;
 
   return (
     <section className="view-panel">
@@ -47,72 +40,82 @@ export function RunsView({ runs, onSelect }: RunsViewProps) {
           이력 {liveRuns.length + pastRuns.length}건
         </span>
       </header>
-      <table className="runs-table">
-        <thead>
-          <tr>
-            <th>명령</th>
-            <th>상태</th>
-            <th>토큰</th>
-            <th>비용</th>
-            <th>시작</th>
-          </tr>
-        </thead>
-        <tbody>
-          {liveRuns.map((run) => (
-            <tr key={run.runId} onClick={() => onSelect(run.runId)}>
-              <td>{run.command}</td>
-              <td>
-                <em className={`run-status ${run.status}`}>
-                  {statusLabel[run.status] ?? run.status}
-                </em>
-              </td>
-              <td>
-                {run.report
-                  ? (
-                      run.report.totalUsage.inputTokens +
-                      run.report.totalUsage.outputTokens
-                    ).toLocaleString()
-                  : "—"}
-              </td>
-              <td>
-                {run.report
-                  ? `$${run.report.totalUsage.costUsd.toFixed(4)}`
-                  : "—"}
-              </td>
-              <td>
-                {new Intl.DateTimeFormat("ko-KR", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }).format(new Date(run.startedAt))}
-              </td>
+
+      <ScheduledTasksSection />
+
+      {!hasRuns ? (
+        <div className="runs-empty-note">
+          <History size={28} strokeWidth={1.4} />
+          <p>첫 명령을 내리면 실행 이력과 토큰·비용이 여기에 쌓입니다.</p>
+        </div>
+      ) : (
+        <table className="runs-table">
+          <thead>
+            <tr>
+              <th>명령</th>
+              <th>상태</th>
+              <th>토큰</th>
+              <th>비용</th>
+              <th>시작</th>
             </tr>
-          ))}
-          {pastRuns.map((run) => (
-            <tr className="is-history" key={run.runId}>
-              <td>{run.command}</td>
-              <td>
-                <em className={`run-status ${run.status}`}>
-                  {statusLabel[run.status] ?? run.status}
-                </em>
-              </td>
-              <td>{(run.inputTokens + run.outputTokens).toLocaleString()}</td>
-              <td>${run.costUsd.toFixed(4)}</td>
-              <td>
-                {run.startedAt
-                  ? new Intl.DateTimeFormat("ko-KR", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }).format(new Date(run.startedAt))
-                  : "—"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {liveRuns.map((run) => (
+              <tr key={run.runId} onClick={() => onSelect(run.runId)}>
+                <td>{run.command}</td>
+                <td>
+                  <em className={`run-status ${run.status}`}>
+                    {statusLabel[run.status] ?? run.status}
+                  </em>
+                </td>
+                <td>
+                  {run.report
+                    ? (
+                        run.report.totalUsage.inputTokens +
+                        run.report.totalUsage.outputTokens
+                      ).toLocaleString()
+                    : "—"}
+                </td>
+                <td>
+                  {run.report
+                    ? formatCost(run.report.totalUsage.costUsd)
+                    : "—"}
+                </td>
+                <td>
+                  {new Intl.DateTimeFormat("ko-KR", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(run.startedAt))}
+                </td>
+              </tr>
+            ))}
+            {pastRuns.map((run) => (
+              <tr className="is-history" key={run.runId}>
+                <td>{run.command}</td>
+                <td>
+                  <em className={`run-status ${run.status}`}>
+                    {statusLabel[run.status] ?? run.status}
+                  </em>
+                </td>
+                <td>{(run.inputTokens + run.outputTokens).toLocaleString()}</td>
+                <td>{formatCost(run.costUsd)}</td>
+                <td>
+                  {run.startedAt
+                    ? new Intl.DateTimeFormat("ko-KR", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }).format(new Date(run.startedAt))
+                    : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }

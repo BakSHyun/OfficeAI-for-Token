@@ -8,5 +8,6 @@ vite.config.d.ts
 config/sources.local.json
 config/repositories.local.json
 config/providers.local.json
+config/license-private.pem
 out/
 release/

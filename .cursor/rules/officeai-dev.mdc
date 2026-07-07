@@ -5,16 +5,19 @@ alwaysApply: true
 
 # OfficeAI 개발 규칙
 
-**어떤 작업이든 시작 전에 `docs/dev-guide.md`를 반드시 읽어라.** 남은 작업 카드(A~F), 파일 지도, 검증 명령이 거기 있다.
+**어떤 작업이든 시작 전에 `docs/dev-guide.md`의 0장(현재 상태·문서 지도)과 2장(절대 규칙)을 반드시 읽어라.** 필요한 세부 문서만 골라 읽어 토큰을 아껴라. 진행 상태(완료된 G 카드)는 0장이 단일 출처다 — 완료된 카드를 다시 구현하지 마라.
+
+**UI/스타일 작업이면 `docs/design-guide.md`도 먼저 읽어라.** 클래스 없는 `<button>`·리터럴 색·raw `<svg>`·CSS-in-JS 금지.
 
 ## 핵심 규칙 요약
 
-1. `core/src/orchestration|providers|budget|telemetry`는 완성·테스트된 코드다. 버그 수정 외 재작성 금지.
+1. `core/src/orchestration|providers|budget|telemetry`는 완성·테스트된 코드다. 버그 수정 외 재작성 금지 (프롬프트 문구 개선은 허용).
 2. 타입 재선언 금지. 단일 출처: `core/src/contracts.ts`, `core/src/orchestration/contracts.ts`, `electron/ipc-contract.ts`. Renderer는 `src/state/bridge-types.ts`로만 import.
-3. UI는 `useEngineStore`(zustand)에서 읽고 `connectEngine()`으로만 액션. 엔진 직접 호출 금지. renderer에서 core는 `import type`만.
-4. API 키는 main 프로세스 safeStorage 전용. renderer로 키 값 전달 금지.
-5. 개인 경로/키 하드코딩 금지 — `config/*.local.json` 또는 Electron userData.
+3. UI는 `useEngineStore`(zustand)에서 읽고 `connectEngine()`으로만 액션. renderer에서 core는 `import type`만. renderer가 값을 import할 수 있는 비-renderer 코드는 `shared/`뿐이며, `shared/`에는 `node:*` import 금지 (Node 전용은 `*-crypto.ts`처럼 분리).
+4. IPC 채널/타입 추가 시 4곳 동시 수정: `ipc-contract.ts` → `main.ts` → `preload.ts` → `bridge-types.ts`.
+5. API 키는 main 프로세스 safeStorage 전용. renderer로 키 값 전달 금지. 개인 경로/키 하드코딩 금지 — `config/*.local.json` 또는 userData.
 6. 새 npm 패키지 추가 전 사용자에게 이유 설명. 그래프/CSS-in-JS 라이브러리 추가 금지.
-7. 모든 변경 후: `npm run core:test` + `npm run lint` + `npm run build` 전부 통과 확인.
-8. 이 환경은 PowerShell 5 — 명령 연결은 `&&`가 아니라 `;`.
-9. 한글로 응답. 주석은 "왜"만. `any` 금지.
+7. 모든 변경 후: `npm run core:test`(66개+) + `npm run lint` + `npm run build`, electron 변경 시 `npm run app:build`까지 전부 통과 확인.
+8. 이 환경은 PowerShell 5 — 명령 연결은 `&&`가 아니라 `;`. `.officeai/`, `release/`, `out/`, `dist/` 커밋 금지.
+9. 한글로 응답. 주석은 "왜"만. `any` 금지 (`unknown` + 좁히기).
+10. UI는 `src/styles.css`의 CSS 변수/기존 클래스만 사용. 인라인 style은 런타임 계산 값에만. 아이콘은 lucide-react만.

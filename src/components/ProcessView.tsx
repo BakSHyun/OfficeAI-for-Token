@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { GitBranch } from "lucide-react";
 import type { PlannedUnit } from "../state/bridge-types";
+import { formatCost } from "../state/format-cost";
 import type { LiveNode } from "../state/engine-store";
 import type { RunState } from "../state/engine-store";
 
@@ -98,7 +99,7 @@ export function ProcessView({ run, nodes }: ProcessViewProps) {
         <h1>업무 프로세스</h1>
         <span>
           {run.command} — {run.plan.strategy === "single-worker" ? "단일 작업" : "역할 분리"}
-          , 예상 ${run.plan.estimatedCostUsd.toFixed(4)}
+          , 예상 {formatCost(run.plan.estimatedCostUsd)}
         </span>
       </header>
       <div className="dag-scroll">

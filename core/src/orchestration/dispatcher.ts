@@ -55,7 +55,10 @@ export function buildModelRegistry(config: ProviderConfig): ModelProfile[] {
     return {
       id: `${binding.provider}:${binding.model}`,
       tier,
-      local: binding.provider === "codex-cli" || tier === "local",
+      local:
+        binding.provider === "codex-cli" ||
+        binding.provider === "cursor-agent-cli" ||
+        tier === "local",
       inputCostPerMillion: binding.inputCostPerMillion,
       outputCostPerMillion: binding.outputCostPerMillion,
       latencyScore: tierLatency[tier],

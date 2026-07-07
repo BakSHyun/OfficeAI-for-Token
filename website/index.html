@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OfficeAI — AI 업무 오케스트레이션</title>
+    <meta
+      name="description"
+      content="한 문장으로 지시하면 AI 팀이 일하고, 당신은 승인만. 토큰은 똑똑하게 아끼는 데스크톱 Command Center."
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #151b24;
+        --text: #e6edf3;
+        --muted: #8c98a6;
+        --mint: #54d69b;
+        --blue: #4e8fff;
+        --border: #243041;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
+      a {
+        color: var(--blue);
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 3rem;
+      }
+      .logo {
+        font-weight: 700;
+        font-size: 1.1rem;
+        letter-spacing: 0.02em;
+      }
+      .badge {
+        font-size: 0.75rem;
+        color: var(--mint);
+        border: 1px solid color-mix(in srgb, var(--mint) 40%, transparent);
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+      }
+      .hero h1 {
+        font-size: clamp(2rem, 5vw, 3rem);
+        line-height: 1.15;
+        margin: 0 0 1rem;
+      }
+      .hero p {
+        color: var(--muted);
+        font-size: 1.1rem;
+        max-width: 42rem;
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 2rem 0 3rem;
+      }
+      .btn {
+        display: inline-block;
+        padding: 0.7rem 1.1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .btn-primary {
+        background: var(--mint);
+        color: #0a1219;
+      }
+      .btn-ghost {
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem;
+      }
+      .card h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1rem;
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .demo {
+        margin-top: 2.5rem;
+        border: 1px dashed var(--border);
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        color: var(--muted);
+        background: linear-gradient(180deg, #111923 0%, #0d1117 100%);
+      }
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="logo">OfficeAI Command Center</div>
+        <span class="badge">Desktop · Windows / macOS</span>
+      </header>
+
+      <section class="hero">
+        <h1>한 문장이면 충분합니다.<br />나머지는 AI 팀이 합니다.</h1>
+        <p>
+          업무를 DAG로 쪼개고, 난이도에 맞는 모델만 씁니다. 크리틱(임원·CFO·CTO)이
+          검토하고, 당신은 승인만 결정하세요. 3D 오피스에서 고양이 에이전트가 일하는
+          모습까지 — 업무가 게임처럼 보입니다.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="../docs/user-guide.md">사용 설명서</a>
+          <a class="btn btn-ghost" href="https://github.com">GitHub (준비 중)</a>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h3>토큰 절약</h3>
+          <p>전부 premium이었다면 얼마였을지 비교해 절약률을 보여줍니다.</p>
+        </article>
+        <article class="card">
+          <h3>로컬 업무 기억</h3>
+          <p>폴더를 연결하면 Cursor·Markdown 기록이 명령 맥락에 자동 포함됩니다.</p>
+        </article>
+        <article class="card">
+          <h3>결정 인박스</h3>
+          <p>계획·예산·검토 반려만 골라 승인. 나머지는 자동 실행.</p>
+        </article>
+        <article class="card">
+          <h3>오프라인 라이선스</h3>
+          <p>Ed25519 서명 키로 활성화. 체험판은 mock 무제한 + API 10회.</p>
+        </article>
+      </section>
+
+      <section class="demo">
+        <strong>3D 오피스 데모</strong>
+        <p>
+          앱 대시보드에서 3D 뷰를 켜면 에이전트가 출근·작업·커피·퇴근합니다.<br />
+          마케팅용 GIF는 릴리스 시 <code>website/assets/</code>에 추가하세요.
+        </p>
+      </section>
+
+      <footer>
+        <p>
+          개발 가이드:
+          <a href="../docs/dev-guide.md">docs/dev-guide.md</a>
+          · 배포:
+          <a href="../docs/release-guide.md">docs/release-guide.md</a>
+        </p>
+        <p>© OfficeAI — Electron + 오케스트레이션 엔진</p>
+      </footer>
+    </div>
+  </body>
+</html>

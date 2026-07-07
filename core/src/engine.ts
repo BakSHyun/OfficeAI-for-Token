@@ -85,6 +85,14 @@ export async function createEngine(
       tiers: { ...config.tiers, ...options.providerOverrides.tiers },
       apiKeys: { ...config.apiKeys, ...options.providerOverrides.apiKeys },
       baseUrls: { ...config.baseUrls, ...options.providerOverrides.baseUrls },
+      cursorAgentCli: {
+        ...config.cursorAgentCli,
+        ...options.providerOverrides.cursorAgentCli,
+        cwd:
+          options.providerOverrides.cursorAgentCli?.cwd ??
+          options.workspaceRoot ??
+          config.cursorAgentCli?.cwd,
+      },
     };
   }
   if (options.forceMock) {

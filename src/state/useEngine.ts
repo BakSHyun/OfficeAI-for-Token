@@ -54,6 +54,7 @@ export function useEngine() {
   const activities = useEngineStore((state) => state.activities);
   const approvals = useEngineStore((state) => state.approvals);
   const usage = useEngineStore((state) => state.usage);
+  const budget = useEngineStore((state) => state.budget);
   const runs = useEngineStore((state) => state.runs);
   const activeRunId = useEngineStore((state) => state.activeRunId);
 
@@ -92,10 +93,12 @@ export function useEngine() {
     activities: legacyActivities,
     approvals,
     usage,
+    budget,
     runs,
     activeRun: activeRunId ? runs[activeRunId] : undefined,
     submitCommand: (command: string) => connectEngine().submitCommand(command),
     resolveApproval: (requestId: string, approved: boolean, note?: string) =>
       connectEngine().resolveApproval(requestId, approved, note),
+    cancelRun: (runId: string) => connectEngine().cancelRun(runId),
   };
 }

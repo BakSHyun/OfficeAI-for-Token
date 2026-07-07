@@ -2,7 +2,13 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
 import type { RunEvent, RunReport } from "../orchestration/contracts";
+import type { TierBinding } from "../providers/contracts";
 import type { EventBus } from "../orchestration/event-bus";
+import {
+  computeSavingsSummary,
+  type SavingsSummary,
+  type UsageCostRow,
+} from "./savings";
 
 export type LedgerRunRow = {
   runId: string;
@@ -20,10 +26,13 @@ export type Ledger = {
   /** Event Bus를 구독해 모든 이벤트/사용량을 기록 */
   attach(bus: EventBus): () => void;
   saveReport(report: RunReport): void;
+  /** 앱 비정상 종료 시 status=running 인 run을 failed로 정리 */
+  markInterruptedRuns(reason: string): number;
   todayTokens(): number;
   recentRuns(limit?: number): LedgerRunRow[];
   runEvents(runId: string): RunEvent[];
   totals(): { inputTokens: number; outputTokens: number; costUsd: number };
+  savingsSummary(premium: TierBinding, runId?: string): SavingsSummary;
   close(): void;
 };
 
@@ -31,16 +40,36 @@ export type Ledger = {
 export function createMemoryLedger(): Ledger {
   const events: RunEvent[] = [];
   const runs = new Map<string, LedgerRunRow>();
+  const usageRows: Array<UsageCostRow & { runId: string }> = [];
   let inputTokens = 0;
   let outputTokens = 0;
   let costUsd = 0;
 
   function handleEvent(event: RunEvent) {
     events.push(event);
+    if (event.type === "run:started") {
+      runs.set(event.runId, {
+        runId: event.runId,
+        command: event.command,
+        status: "running",
+        summary: "",
+        inputTokens: 0,
+        outputTokens: 0,
+        costUsd: 0,
+        startedAt: event.at,
+        finishedAt: "",
+      });
+    }
     if (event.type === "token:used") {
       inputTokens += event.usage.inputTokens;
       outputTokens += event.usage.outputTokens;
       costUsd += event.usage.costUsd;
+      usageRows.push({
+        runId: event.runId,
+        inputTokens: event.usage.inputTokens,
+        outputTokens: event.usage.outputTokens,
+        costUsd: event.usage.costUsd,
+      });
     }
   }
 
@@ -61,6 +90,22 @@ export function createMemoryLedger(): Ledger {
         finishedAt: report.finishedAt,
       });
     },
+    markInterruptedRuns(reason) {
+      const at = new Date().toISOString();
+      let count = 0;
+      for (const [runId, row] of runs) {
+        if (row.status !== "running") continue;
+        runs.set(runId, {
+          ...row,
+          status: "failed",
+          summary: reason,
+          finishedAt: at,
+        });
+        events.push({ type: "run:failed", runId, error: reason, at });
+        count += 1;
+      }
+      return count;
+    },
     todayTokens() {
       return inputTokens + outputTokens;
     },
@@ -76,6 +121,12 @@ export function createMemoryLedger(): Ledger {
     },
     totals() {
       return { inputTokens, outputTokens, costUsd };
+    },
+    savingsSummary(premium, runId) {
+      const rows = runId
+        ? usageRows.filter((row) => row.runId === runId)
+        : usageRows;
+      return computeSavingsSummary(rows, premium);
     },
     close() {},
   };
@@ -136,6 +187,15 @@ export function createLedger(databasePath: string): Ledger {
       status=@status, summary=@summary, input_tokens=@inputTokens,
       output_tokens=@outputTokens, cost_usd=@costUsd, finished_at=@finishedAt`,
   );
+  const selectRunningRuns = database.prepare(
+    `SELECT run_id AS runId, command, status, summary,
+            input_tokens AS inputTokens, output_tokens AS outputTokens,
+            cost_usd AS costUsd, started_at AS startedAt, finished_at AS finishedAt
+     FROM runs WHERE status = 'running'`,
+  );
+  const markRunFailed = database.prepare(
+    `UPDATE runs SET status = 'failed', summary = ?, finished_at = ? WHERE run_id = ?`,
+  );
 
   function handleEvent(event: RunEvent) {
     const runId = "runId" in event ? event.runId : "unknown";
@@ -169,6 +229,11 @@ export function createLedger(databasePath: string): Ledger {
     }
   }
 
+  const selectUsageRows = database.prepare(
+    `SELECT input_tokens AS inputTokens, output_tokens AS outputTokens, cost_usd AS costUsd
+     FROM usage WHERE (? IS NULL OR run_id = ?)`,
+  );
+
   return {
     attach(bus) {
       return bus.subscribe(handleEvent);
@@ -185,6 +250,21 @@ export function createLedger(databasePath: string): Ledger {
         startedAt: report.startedAt,
         finishedAt: report.finishedAt,
       });
+    },
+    markInterruptedRuns(reason) {
+      const at = new Date().toISOString();
+      const running = selectRunningRuns.all() as LedgerRunRow[];
+      for (const row of running) {
+        markRunFailed.run(reason, at, row.runId);
+        const event: RunEvent = {
+          type: "run:failed",
+          runId: row.runId,
+          error: reason,
+          at,
+        };
+        insertEvent.run(row.runId, event.type, JSON.stringify(event), at);
+      }
+      return running.length;
     },
     todayTokens() {
       const today = new Date().toISOString().slice(0, 10);
@@ -223,6 +303,13 @@ export function createLedger(databasePath: string): Ledger {
         )
         .get() as { inputTokens: number; outputTokens: number; costUsd: number };
       return row;
+    },
+    savingsSummary(premium, runId) {
+      const rows = selectUsageRows.all(
+        runId ?? null,
+        runId ?? null,
+      ) as UsageCostRow[];
+      return computeSavingsSummary(rows, premium);
     },
     close() {
       database.close();

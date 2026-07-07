@@ -24,6 +24,15 @@ function processInvocation(command: string, args: string[]) {
   };
 }
 
+function decodeProcessChunk(chunk: Buffer): string {
+  if (process.platform !== "win32") return chunk.toString("utf8");
+  try {
+    return new TextDecoder("windows-949").decode(chunk);
+  } catch {
+    return chunk.toString("utf8");
+  }
+}
+
 export async function runProcess(options: RunOptions) {
   const invocation = processInvocation(options.command, options.args);
   const maxOutputBytes = options.maxOutputBytes ?? 40_000;
@@ -51,10 +60,10 @@ export async function runProcess(options: RunOptions) {
     let stderr = "";
 
     child.stdout.on("data", (chunk: Buffer) => {
-      if (stdout.length < maxOutputBytes) stdout += chunk.toString("utf8");
+      if (stdout.length < maxOutputBytes) stdout += decodeProcessChunk(chunk);
     });
     child.stderr.on("data", (chunk: Buffer) => {
-      if (stderr.length < maxOutputBytes) stderr += chunk.toString("utf8");
+      if (stderr.length < maxOutputBytes) stderr += decodeProcessChunk(chunk);
     });
     child.on("error", (error) => {
       clearTimeout(timer);

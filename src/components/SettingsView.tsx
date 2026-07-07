@@ -1,41 +1,154 @@
 import { useEffect, useState } from "react";
-import { KeyRound, Save, SlidersHorizontal } from "lucide-react";
+import { Download, KeyRound, Save } from "lucide-react";
+import { ConnectionGuide } from "./ConnectionGuide";
+import { MemoryConnectionSection } from "./MemoryConnectionSection";
+import { LicenseSection } from "./LicenseSection";
+import { PrivacySection } from "./PrivacySection";
+import { SceneOfficeSection } from "./SceneOfficeSection";
+import { ConnectionStatusSection } from "./ConnectionStatusSection";
+import { ModelTierSection } from "./ModelTierSection";
 import type {
   ProviderConfig,
   SettingsPayload,
 } from "../state/bridge-types";
+import {
+  defaultBudgetPreferences,
+  loadBudgetPreferencesSync,
+  saveBudgetPreferencesLocal,
+} from "../state/budget-preferences";
 
-const tierOrder = ["local", "economy", "standard", "premium"] as const;
-const providerOptions = ["openai", "anthropic", "codex-cli", "mock"];
+const demoTiers: ProviderConfig["tiers"] = {
+  local: {
+    provider: "mock",
+    model: "mock",
+    inputCostPerMillion: 0,
+    outputCostPerMillion: 0,
+  },
+  economy: {
+    provider: "mock",
+    model: "mock",
+    inputCostPerMillion: 0,
+    outputCostPerMillion: 0,
+  },
+  standard: {
+    provider: "mock",
+    model: "mock",
+    inputCostPerMillion: 0,
+    outputCostPerMillion: 0,
+  },
+  premium: {
+    provider: "mock",
+    model: "mock",
+    inputCostPerMillion: 0,
+    outputCostPerMillion: 0,
+  },
+};
 
 export function SettingsView() {
   const bridge = window.officeai;
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [tiers, setTiers] = useState<ProviderConfig["tiers"] | null>(null);
   const [concurrency, setConcurrency] = useState(4);
+  const [globalDailyTokens, setGlobalDailyTokens] = useState(
+    defaultBudgetPreferences.globalDailyTokens,
+  );
+  const [krwPerUsd, setKrwPerUsd] = useState(defaultBudgetPreferences.krwPerUsd);
   const [openaiKey, setOpenaiKey] = useState("");
   const [anthropicKey, setAnthropicKey] = useState("");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportNote, setExportNote] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!bridge) return;
+    if (!bridge) {
+      const local = loadBudgetPreferencesSync();
+      setGlobalDailyTokens(local.globalDailyTokens);
+      setKrwPerUsd(local.krwPerUsd);
+      return;
+    }
     void bridge.getSettings().then((payload) => {
       setSettings(payload);
       setTiers(payload.providers.tiers);
       setConcurrency(payload.providers.concurrency);
+      setGlobalDailyTokens(payload.budget.globalDailyTokens);
+      setKrwPerUsd(payload.budget.krwPerUsd);
+      saveBudgetPreferencesLocal(payload.budget);
     });
   }, [bridge]);
 
   if (!bridge) {
     return (
-      <section className="view-panel decision-empty">
-        <SlidersHorizontal size={34} strokeWidth={1.4} />
-        <h1>데모 모드</h1>
-        <p>
-          브라우저 미리보기에서는 설정을 변경할 수 없습니다. Electron 앱(
-          <code>npm run app:dev</code>)에서 API 키와 모델 티어를 설정하세요.
-        </p>
+      <section className="view-panel">
+        <header className="view-heading">
+          <h1>설정 · AI 연결 가이드</h1>
+          <span>
+            브라우저 데모 모드입니다. 아래 가이드대로 Electron 앱(
+            <code>npm run app:dev</code>)에서 연결하세요.
+          </span>
+        </header>
+        <ConnectionStatusSection
+          apiKeyPresence={{ openai: false, anthropic: false }}
+          providers={{ concurrency: 4, tiers: demoTiers }}
+        />
+        <ModelTierSection
+          concurrency={4}
+          onConcurrencyChange={() => undefined}
+          onTiersChange={() => undefined}
+          readOnly
+          tiers={demoTiers}
+        />
+        <details className="settings-collapsible">
+          <summary>AI 연결 가이드 (LM Studio · Cursor · Codex 등)</summary>
+          <ConnectionGuide canSaveKeys={false} />
+        </details>
+        <MemoryConnectionSection />
+        <LicenseSection />
+        <SceneOfficeSection />
+        <div className="settings-section">
+          <h2>예산</h2>
+          <p className="settings-note">
+            브라우저 데모에서는 localStorage에만 저장됩니다.
+          </p>
+          <div className="settings-fields-row">
+            <label className="settings-inline">
+              일일 토큰 한도
+              <input
+                min={1000}
+                onChange={(event) =>
+                  setGlobalDailyTokens(
+                    Math.max(1000, Number(event.target.value) || 1000),
+                  )
+                }
+                type="number"
+                value={globalDailyTokens}
+              />
+            </label>
+            <label className="settings-inline">
+              환율 (₩/USD)
+              <input
+                min={1}
+                onChange={(event) =>
+                  setKrwPerUsd(Math.max(1, Number(event.target.value) || 1400))
+                }
+                type="number"
+                value={krwPerUsd}
+              />
+            </label>
+          </div>
+        </div>
+        <div className="settings-footer">
+          <button
+            onClick={() => {
+              saveBudgetPreferencesLocal({ globalDailyTokens, krwPerUsd });
+              setSavedAt(new Date().toLocaleTimeString("ko-KR"));
+            }}
+            type="button"
+          >
+            <Save size={14} /> 예산 저장
+          </button>
+          {savedAt ? <small>{savedAt} 저장됨</small> : null}
+        </div>
       </section>
     );
   }
@@ -56,8 +169,10 @@ export function SettingsView() {
       if (anthropicKey.trim()) apiKeys.anthropic = anthropicKey.trim();
       await bridge!.saveSettings({
         providers: { tiers: tiers!, concurrency },
+        budget: { globalDailyTokens, krwPerUsd },
         ...(Object.keys(apiKeys).length > 0 ? { apiKeys } : {}),
       });
+      saveBudgetPreferencesLocal({ globalDailyTokens, krwPerUsd });
       setOpenaiKey("");
       setAnthropicKey("");
       const refreshed = await bridge!.getSettings();
@@ -68,6 +183,21 @@ export function SettingsView() {
     }
   }
 
+  async function handleExportDiagnostic() {
+    setExporting(true);
+    setExportNote(null);
+    try {
+      const result = await bridge!.exportDiagnostic();
+      if (result.saved && result.path) {
+        setExportNote(`저장됨: ${result.path}`);
+      } else {
+        setExportNote("보내기가 취소되었습니다.");
+      }
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <section className="view-panel">
       <header className="view-heading">
@@ -75,83 +205,27 @@ export function SettingsView() {
         <span>티어별 모델과 API 키. 키는 OS 키체인에 암호화 저장됩니다.</span>
       </header>
 
-      <div className="settings-section">
-        <h2>모델 티어</h2>
-        <table className="settings-table">
-          <thead>
-            <tr>
-              <th>티어</th>
-              <th>Provider</th>
-              <th>모델</th>
-              <th>입력 $/1M</th>
-              <th>출력 $/1M</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tierOrder.map((tier) => {
-              const binding = tiers[tier];
-              const update = (
-                patch: Partial<(typeof tiers)[typeof tier]>,
-              ) =>
-                setTiers({ ...tiers, [tier]: { ...binding, ...patch } });
-              return (
-                <tr key={tier}>
-                  <td>
-                    <span className={`tier-badge tier-${tier}`}>{tier}</span>
-                  </td>
-                  <td>
-                    <select
-                      onChange={(event) =>
-                        update({ provider: event.target.value })
-                      }
-                      value={binding.provider}
-                    >
-                      {providerOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      onChange={(event) => update({ model: event.target.value })}
-                      value={binding.model}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      inputMode="decimal"
-                      onChange={(event) =>
-                        update({
-                          inputCostPerMillion: Number(event.target.value) || 0,
-                        })
-                      }
-                      value={binding.inputCostPerMillion}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      inputMode="decimal"
-                      onChange={(event) =>
-                        update({
-                          outputCostPerMillion: Number(event.target.value) || 0,
-                        })
-                      }
-                      value={binding.outputCostPerMillion}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ConnectionStatusSection
+        apiKeyPresence={settings.apiKeyPresence}
+        providers={settings.providers}
+      />
+
+      <ModelTierSection
+        concurrency={concurrency}
+        onConcurrencyChange={setConcurrency}
+        onTiersChange={setTiers}
+        tiers={tiers}
+      />
 
       <div className="settings-section">
         <h2>
           <KeyRound size={13} /> API 키
         </h2>
+        <p className="settings-note">
+          OpenAI·Anthropic 키를 각각 저장할 수 있습니다(둘 다 등록 가능). Cursor
+          Agent·Codex·LM Studio는 API 키가 필요 없습니다 — 위 모델 티어 표에서
+          Provider만 변경하세요.
+        </p>
         <div className="settings-keys">
           <label>
             OpenAI
@@ -180,29 +254,63 @@ export function SettingsView() {
         </div>
       </div>
 
+      <details className="settings-collapsible">
+        <summary>AI 연결 가이드 (LM Studio · Cursor · Codex 등)</summary>
+        <ConnectionGuide canSaveKeys />
+      </details>
+
+      <MemoryConnectionSection />
+
+      <LicenseSection />
+
+      <SceneOfficeSection />
+
+      <PrivacySection />
+
       <div className="settings-section">
-        <h2>동시 실행</h2>
-        <label className="settings-inline">
-          최대 동시 LLM 호출 수
-          <input
-            max={12}
-            min={1}
-            onChange={(event) =>
-              setConcurrency(
-                Math.max(1, Math.min(12, Number(event.target.value) || 1)),
-              )
-            }
-            type="number"
-            value={concurrency}
-          />
-        </label>
+        <h2>예산</h2>
+        <div className="settings-fields-row">
+          <label className="settings-inline">
+            일일 토큰 한도
+            <input
+              min={1000}
+              onChange={(event) =>
+                setGlobalDailyTokens(
+                  Math.max(1000, Number(event.target.value) || 1000),
+                )
+              }
+              type="number"
+              value={globalDailyTokens}
+            />
+          </label>
+          <label className="settings-inline">
+            환율 (₩/USD)
+            <input
+              min={1}
+              onChange={(event) =>
+                setKrwPerUsd(Math.max(1, Number(event.target.value) || 1400))
+              }
+              type="number"
+              value={krwPerUsd}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="settings-footer">
         <button disabled={saving} onClick={() => void handleSave()} type="button">
           <Save size={14} /> {saving ? "저장 중…" : "저장"}
         </button>
+        <button
+          className="ghost"
+          disabled={exporting}
+          onClick={() => void handleExportDiagnostic()}
+          type="button"
+        >
+          <Download size={14} /> {exporting ? "보내는 중…" : "진단 파일보내기"}
+        </button>
         {savedAt ? <small>{savedAt} 저장됨 — 엔진 재시작 완료</small> : null}
+        {exportNote ? <small>{exportNote}</small> : null}
       </div>
     </section>
   );

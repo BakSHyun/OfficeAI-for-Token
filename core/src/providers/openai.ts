@@ -3,6 +3,8 @@ import type { LLMProvider, LLMRequest, LLMResponse } from "./contracts";
 type OpenAIOptions = {
   apiKey: string;
   baseUrl?: string;
+  /** 텔레메트리 라벨. OpenAI 호환 로컬 서버(LM Studio 등) 구분용 */
+  id?: string;
 };
 
 export function createOpenAIProvider(options: OpenAIOptions): LLMProvider {
@@ -10,9 +12,10 @@ export function createOpenAIProvider(options: OpenAIOptions): LLMProvider {
     /\/$/,
     "",
   );
+  const id = options.id ?? "openai";
 
   return {
-    id: "openai",
+    id,
     async complete(request: LLMRequest): Promise<LLMResponse> {
       const body: Record<string, unknown> = {
         model: request.model,
@@ -59,7 +62,7 @@ export function createOpenAIProvider(options: OpenAIOptions): LLMProvider {
           outputTokens: payload.usage?.completion_tokens ?? 0,
         },
         model: payload.model ?? request.model,
-        provider: "openai",
+        provider: id,
       };
     },
   };

@@ -1,10 +1,18 @@
 import {
   AlertOctagon,
+  ArrowRight,
   CircleDollarSign,
   ClipboardList,
   Inbox,
   ShieldAlert,
 } from "lucide-react";
+import {
+  criticReviewTier,
+  labelCritic,
+  labelExecutor,
+  labelTier,
+  roleSummaries,
+} from "../../shared/role-labels";
 import type { ApprovalRequest } from "../state/bridge-types";
 
 type PlanUnitSummary = {
@@ -12,7 +20,10 @@ type PlanUnitSummary = {
   title: string;
   role: string;
   tier: string;
+  model?: string;
+  provider?: string;
   critics: string[];
+  expectedOutput?: string;
 };
 
 const kindMeta: Record<
@@ -33,6 +44,69 @@ type DecisionInboxProps = {
   approvals: ApprovalRequest[];
   onResolve: (requestId: string, approved: boolean) => void;
 };
+
+function PlanWorkflow({ units }: { units: PlanUnitSummary[] }) {
+  return (
+    <div className="decision-workflow">
+      <div className="decision-workflow-head">
+        <span>업무</span>
+        <span>담당 직원 · AI</span>
+        <span>검토</span>
+        <span>산출물</span>
+      </div>
+      <ol className="decision-flow">
+        {units.map((unit, index) => (
+          <li className="decision-flow-step" key={unit.id}>
+            <div className="decision-flow-index">{index + 1}</div>
+            <div className="decision-flow-task">
+              <strong>{unit.title}</strong>
+              <small>{roleSummaries[unit.role] ?? unit.role}</small>
+            </div>
+            <div className="decision-flow-worker">
+              <span className="decision-worker-name">
+                {labelExecutor(unit.role)}
+              </span>
+              <span className={`tier-badge tier-${unit.tier}`}>
+                {labelTier(unit.tier)}
+              </span>
+              {unit.model ? (
+                <small className="decision-model">
+                  {unit.provider ? `${unit.provider} · ` : ""}
+                  {unit.model}
+                </small>
+              ) : null}
+            </div>
+            <div className="decision-flow-review">
+              {unit.critics.length > 0 ? (
+                unit.critics.map((persona) => {
+                  const reviewTier = criticReviewTier[persona] ?? "standard";
+                  return (
+                    <span className="decision-reviewer" key={persona}>
+                      <ArrowRight aria-hidden size={12} />
+                      <span>{labelCritic(persona)}</span>
+                      <span className={`tier-badge tier-${reviewTier}`}>
+                        {labelTier(reviewTier)}
+                      </span>
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="decision-flow-skip">검토 없음</span>
+              )}
+            </div>
+            <div className="decision-flow-output">
+              {unit.expectedOutput ?? "—"}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="decision-workflow-note">
+        승인하면 위 순서대로 직원이 작업하고, 검토가 필요한 단계는 담당
+        검토자가 결과를 확인합니다.
+      </p>
+    </div>
+  );
+}
 
 export function DecisionInbox({ approvals, onResolve }: DecisionInboxProps) {
   if (approvals.length === 0) {
@@ -74,32 +148,7 @@ export function DecisionInbox({ approvals, onResolve }: DecisionInboxProps) {
                 </time>
               </div>
               <p className="decision-reason">{request.reason}</p>
-              {units ? (
-                <table className="decision-units">
-                  <thead>
-                    <tr>
-                      <th>작업</th>
-                      <th>역할</th>
-                      <th>AI 레벨</th>
-                      <th>검토</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {units.map((unit) => (
-                      <tr key={unit.id}>
-                        <td>{unit.title}</td>
-                        <td>{unit.role}</td>
-                        <td>
-                          <span className={`tier-badge tier-${unit.tier}`}>
-                            {unit.tier}
-                          </span>
-                        </td>
-                        <td>{unit.critics.join(", ") || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : null}
+              {units ? <PlanWorkflow units={units} /> : null}
               {Array.isArray(request.payload?.verdicts) ? (
                 <ul className="decision-verdicts">
                   {(
@@ -110,7 +159,8 @@ export function DecisionInbox({ approvals, onResolve }: DecisionInboxProps) {
                     }>
                   ).map((verdict) => (
                     <li key={verdict.persona}>
-                      <strong>{verdict.persona}</strong> {verdict.score}점 —{" "}
+                      <strong>{labelCritic(verdict.persona)}</strong>{" "}
+                      {verdict.score}점 —{" "}
                       {verdict.issues.join(" / ") || "사유 미기재"}
                     </li>
                   ))}

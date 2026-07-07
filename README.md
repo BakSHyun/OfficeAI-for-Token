@@ -4,6 +4,10 @@
 
 > **개발을 이어서 하려면 먼저 `docs/dev-guide.md`를 읽으세요.** 남은 작업 카드와 규칙이 정리되어 있습니다.
 
+- [사용 설명서](docs/user-guide.md)
+- [배포·코드사이닝 가이드](docs/release-guide.md)
+- [랜딩 페이지](website/index.html) (정적 HTML)
+
 ## 실행
 
 ```bash
@@ -16,7 +20,7 @@ npm run core:test  # 코어 테스트
 
 프로덕션 빌드는 `npm run build`(웹) / `npm run app:package:win|mac`(설치본), 정적 검사는 `npm run lint`.
 
-LLM 연결은 `config/providers.example.json`을 `config/providers.local.json`으로 복사해 티어별 provider(openai/anthropic/codex-cli/mock)와 API 키를 설정합니다.
+LLM 연결은 `config/providers.example.json`을 `config/providers.local.json`으로 복사해 티어별 provider(openai/anthropic/codex-cli/cursor-agent-cli/mock)와 API 키를 설정합니다.
 
 ## 코어 실행
 
