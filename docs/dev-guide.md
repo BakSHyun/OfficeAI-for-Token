@@ -7,10 +7,8 @@
 
 ## 0. 현재 상태 · 문서 지도 (2026-07-07 기준)
 
-**진행 상태:** 카드 A~E 완료, F(패키징)는 아이콘·인스톨러 생성까지 확인. G 카드 중 **G1·G2·G4~G15·G17·G18(1단계) 완료**. 남은 것:
-- **G18 2단계** (LLM 요약·계층 압축)
-- **G3 자동 업데이트** (코드사이닝 인증서 확보 후 — 사용자 결정 필요)
-- **G16 직원 마켓 구현** (기획 완료, `docs/employee-marketplace-plan.md`)
+**진행 상태:** 카드 A~E 완료, F(패키징)는 아이콘·인스톨러 생성까지 확인. G 카드 **G1~G18·G16(M1~M5) 완료**. 남은 것:
+- **G16 M6~M7** (Pro 강화 오버라이드·온라인 결제 — 선택)
 - 판매 준비: 코드사이닝(사용자 구매)·키 발급 서버(`docs/roadmap-and-business.md` PART D Phase 1)
 
 **문서 지도 — 작업에 필요한 것만 읽어라 (토큰 절약):**
@@ -277,7 +275,7 @@ npx electron-rebuild -f -w better-sqlite3
 
 - `build/` 폴더에 앱 아이콘 (icon.ico 256px, icon.icns) — 아이콘 이미지는 사용자에게 요청
 - `npm run app:package:win` 실행 → `release/*.exe` 생성 확인 → 설치 → 실행 → 명령 제출까지 스모크 테스트
-- 자동 업데이트는 **배포 채널(GitHub Releases 등)이 정해진 뒤에** electron-updater 추가. 지금은 하지 마라
+- 자동 업데이트는 G3에서 구현됨 (`electron/auto-update.ts`, GitHub Releases)
 - 완료 기준: 인스톨러로 설치한 앱에서 mock 티어로 명령 1건이 완료된다.
 
 ### 작업 순서 권장
@@ -290,7 +288,7 @@ npx electron-rebuild -f -w better-sqlite3
 
 유저 입장에서 **간편함·안정성·특별한 경험**이 판매의 조건이다. 아래 G 카드는 그 갭을 메우는 순서대로 정렬되어 있다. 각 카드는 카드 A~F와 같은 규칙(완료 기준 + 검증)을 따른다.
 
-> **G 카드 현황:** ✅ G1·G2·G4~G15·G17·G18(1단계) 완료 — 아래 완료 카드 명세는 참고용이니 다시 구현하지 마라. ⏳ 남은 것: **G18 2단계**, G3(코드사이닝 후), G16(마켓 구현).
+> **G 카드 현황:** ✅ G1~G18·G16(M1~M5) 완료 — 아래 완료 카드 명세는 참고용이니 다시 구현하지 마라. ⏳ 선택: G16 M6(Pro 강화), M7(온라인 결제).
 
 ### 우선순위 1 — 안정성 (없으면 환불감)
 
@@ -304,10 +302,11 @@ npx electron-rebuild -f -w better-sqlite3
 - 규칙: 429/5xx/네트워크 오류 → 지수 백오프 2회 재시도(1s, 4s) → 실패 시 한 단계 하위 티어로 1회 폴백 → 그래도 실패면 `node:failed`. 4xx(인증)는 재시도 없이 즉시 `approval:requested`(kind: side-effect 아님 — 새 kind `config-error`를 contracts에 추가 금지, reason 텍스트로 안내)
 - 완료 기준: 테스트에서 가짜 provider가 2회 실패 후 성공하는 시나리오 통과 (`core/tests/`에 추가)
 
-**G3. 자동 업데이트 (난이도: 중, 배포 채널 결정 후)**
-- `electron-updater` 추가, GitHub Releases를 publish 대상으로 `electron-builder.yml`의 `publish` 설정
-- UI: 업데이트 다운로드 완료 시 "재시작하여 업데이트" 배너 (강제 아님)
-- 완료 기준: 버전 올린 릴리스에서 업데이트 감지 확인. **코드사이닝 인증서가 없으면 Windows SmartScreen 경고가 뜬다는 점을 사용자에게 보고할 것**
+**G3. 자동 업데이트 (✅ 완료, 2026-07-08)**
+- `electron-updater` + `electron/auto-update.ts` — 패키징된 앱에서 GitHub Releases 확인(기동 시 + 4시간 주기), 다운로드 완료 시 `UpdateBanner`로 "재시작하여 업데이트" (강제 아님)
+- IPC: `update:get-status` / `update:install` / `update:status-changed` (ipc-contract → main/preload/bridge-types)
+- `electron-builder.yml` `publish`: GitHub `BakSHyun/OfficeAI-for-Token`
+- 개발 모드·`OFFICEAI_DISABLE_AUTO_UPDATE=1`에서는 비활성. **코드사이닝 없이 배포하면 Windows SmartScreen 경고가 뜰 수 있음** (`docs/release-guide.md`)
 
 **G4. 진단 번들 내보내기 (난이도: 하)**
 - 설정 화면에 "진단 파일 내보내기" 버튼: 최근 이벤트 로그(개인정보 redaction 적용, `core/src/security/redaction.ts` 재사용) + 버전/OS 정보를 zip이 아닌 단일 `.json`으로 저장 대화상자
@@ -364,7 +363,13 @@ npx electron-rebuild -f -w better-sqlite3
 **G14. 코드사이닝 + 크래시 리포팅** — Windows EV 인증서/Apple notarization은 사용자가 구매해야 함(보고할 것). 크래시 리포팅은 opt-in Sentry
 **G15. 웹사이트/문서** — 랜딩 페이지, 사용 설명서, 데모 GIF(3D 오피스가 최고의 마케팅 소재)
 
-**G16. AI 직원 마켓플레이스 (기획 완료, 구현 대기)** — 직무별 AI "직원"을 개별 구매/활성화하는 구조. 기존 오프라인 서명 라이선스(G13)·`WorkerRole` 재사용. **상세 기획·구현 카드(M1~M7)·규칙은 `docs/employee-marketplace-plan.md` 참고.** 코어(dispatcher/orchestrator) 미변경 원칙 준수.
+**G16. AI 직원 마켓플레이스 (M1~M5 ✅ 2026-07-08)** — `docs/employee-marketplace-plan.md` 참고.
+- ✅ M1: `shared/employees.ts`, `employee-catalog.ts`, `entitlement.ts` + 테스트
+- ✅ M2: `LicensePayload.employees`, 다중 키 `license.json`, `scripts/issue-license.ts --employees`
+- ✅ M3: IPC `employees:catalog|entitlement|set-active|changed`
+- ✅ M4: `MarketplaceView`, `TeamRosterSection`, 네비 「직원 마켓」
+- ✅ M5: `EmployeeGateBanner` + `ProcessView` 미보유 배지 (실행은 차단하지 않음)
+- ⏳ M6: Pro 강화 `createEngine` 옵션 주입 / M7: 온라인 결제
 
 > **전체 완성도 진단 · 향후 로드맵(실행 액션/컨텍스트 압축/MCP/Skills/Hooks/프로젝트 관리) · 비즈니스 모델 · 백엔드 전략은 `docs/roadmap-and-business.md` 참고.** 신규 기능 착수 시 그 문서의 우선순위(PART E)를 기준으로 G/M 카드로 분해할 것.
 
@@ -378,9 +383,9 @@ npx electron-rebuild -f -w better-sqlite3
 - 코어 미변경. 테스트: `core/tests/action-blocks.test.ts`, `core/tests/action-runner.test.ts`
 - v2 후보: git 커밋/HTTP 액션 타입 추가, 명령 화이트리스트 설정, 실행 이력 UI
 
-**G18. 컨텍스트 압축/장기기억 (1단계 ✅ 완료, 2026-07-07)** — `docs/roadmap-and-business.md` B-2 참고.
-- ✅ 1단계: `electron/run-summaries.ts` — run 완료 시 규칙 기반 요약을 userData `run-summaries.jsonl`에 저장, 다음 `submitCommand` 시 최근 3건을 `[최근 업무 맥락]` 블록으로 명령 앞에 첨부 (LLM 호출 없음, 코어 무변경)
-- ⏳ 2단계: economy 티어 LLM 요약, 계층 압축(유닛→run→프로젝트), `core/src/context/` 확장
+**G18. 컨텍스트 압축/장기기억 (✅ 완료, 2026-07-08)** — `docs/roadmap-and-business.md` B-2 참고.
+- ✅ 1단계: `electron/run-summaries.ts` — run 완료 시 규칙 기반 요약을 userData `run-summaries.jsonl`에 저장, 다음 `submitCommand` 시 최근 3건을 `[최근 업무 맥락]` 블록으로 명령 앞에 첨부
+- ✅ 2단계: `core/src/context/hierarchical-summary.ts` + `electron/run-summary-llm.ts` + `electron/project-summary-llm.ts` + `electron/project-summaries.ts` — economy 티어로 유닛→run→프로젝트 계층 압축, `project-summaries.json` 저장, 다음 명령에 `[프로젝트 맥락]` 첨부. LLM 실패 시 규칙 요약 폴백 (`summaryMethod: rule|llm`). 프로젝트 추론은 `inferProjectHints`(work-profile) 재사용
 
 ### G 카드 공통 주의
 

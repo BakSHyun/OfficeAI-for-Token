@@ -9,6 +9,7 @@ import {
   verifyLicenseKey,
   buildLicenseStatus,
 } from "../../shared/license-crypto.ts";
+import { ownedSkusFromPayloads } from "../../shared/entitlement";
 import type { DispatchPlan } from "../src/orchestration/contracts";
 import type { ProviderConfig } from "../src/providers/contracts";
 
@@ -42,6 +43,26 @@ test("verifyLicenseKey는 만료된 키를 거부한다", () => {
   );
   const result = verifyLicenseKey(key);
   assert.equal(result.valid, false);
+});
+
+test("verifyLicenseKey는 employees 필드를 읽는다", () => {
+  const key = signLicensePayload(
+    {
+      v: 1,
+      email: "emp@officeai.test",
+      expiresAt: "2099-12-31",
+      employees: ["developer", "pm"],
+    },
+    privateKey,
+  );
+  const result = verifyLicenseKey(key);
+  assert.equal(result.valid, true);
+  if (result.valid) {
+    assert.deepEqual(result.payload.employees, ["developer", "pm"]);
+    const owned = ownedSkusFromPayloads([result.payload]);
+    assert.ok(owned.includes("developer"));
+    assert.ok(owned.includes("planner"));
+  }
 });
 
 test("buildLicenseStatus는 체험 잔여 횟수를 계산한다", () => {

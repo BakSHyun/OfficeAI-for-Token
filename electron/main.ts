@@ -31,6 +31,7 @@ import {
   type ActionWorkspaceStatus,
   type ExecuteActionResult,
   type ProviderProbeResult,
+  type UpdateStatus,
 } from "./ipc-contract";
 import {
   appendActionLog,
@@ -39,12 +40,22 @@ import {
   loadActionWorkspace,
   saveActionWorkspace,
 } from "./action-runner";
+import {
+  createAutoUpdateService,
+  type AutoUpdateService,
+} from "./auto-update";
+import { createIdleUpdateStatus } from "./update-status";
 import { probeUsedProviders } from "./provider-probe";
 import {
   appendRunSummary,
   enrichCommandWithContext,
   loadRecentSummaries,
 } from "./run-summaries";
+import {
+  loadProjectSummaryForCommand,
+  loadWorkProfile,
+  updateProjectSummaryAfterRun,
+} from "./project-summaries";
 import {
   memoryOutputDir,
   runMemoryScan,
@@ -76,6 +87,14 @@ import {
   type LicenseState,
 } from "../shared/license-crypto";
 import { loadLicenseState, saveLicenseState } from "./license-store";
+import { normalizeLicenseKeys } from "../shared/license-core";
+import {
+  getEmployeeCatalog,
+  loadEntitlement,
+  saveActiveSkus,
+} from "./employee-service";
+import { buildEntitlement } from "../shared/entitlement";
+import type { EmployeeSkuId } from "../shared/employees";
 import { initCrashReporting, captureMainException } from "./crash-reporting";
 import {
   loadPrivacySettings,
@@ -84,6 +103,7 @@ import {
 
 let engine: Engine | null = null;
 let mainWindow: BrowserWindow | null = null;
+let autoUpdate: AutoUpdateService | null = null;
 let desktop: DesktopIntegration | null = null;
 let cachedSchedules: ScheduledTask[] = [];
 let scheduleTimer: ReturnType<typeof setInterval> | null = null;
@@ -111,6 +131,7 @@ async function getLicenseState(): Promise<LicenseState> {
 async function pushLicenseStatus() {
   const status = resolveLicenseStatus(await getLicenseState());
   mainWindow?.webContents.send(IPC.licenseStatusChanged, status);
+  await pushEntitlement();
 }
 
 async function handleLicensePlannedEvent(event: RunEvent, current: Engine) {
@@ -118,8 +139,10 @@ async function handleLicensePlannedEvent(event: RunEvent, current: Engine) {
   if (!planUsesPaidApi(event.plan, current.registry.config)) return;
 
   const state = await getLicenseState();
-  const verified = state.key ? verifyLicenseKey(state.key) : null;
-  if (verified?.valid) return;
+  const hasValidLicense = normalizeLicenseKeys(state).some(
+    (key) => verifyLicenseKey(key).valid,
+  );
+  if (hasValidLicense) return;
 
   if (state.apiRunsUsed >= TRIAL_API_RUN_LIMIT) {
     current.orchestrator.cancel(event.runId);
@@ -391,7 +414,22 @@ async function bootEngine(): Promise<Engine> {
     desktop?.onEngineEvent(event);
     void handleLicensePlannedEvent(event, created);
     if (event.type === "run:completed") {
-      void appendRunSummary(app.getPath("userData"), event.report);
+      const userData = app.getPath("userData");
+      void (async () => {
+        const profile = await loadWorkProfile(userData);
+        const entry = await appendRunSummary(
+          userData,
+          event.report,
+          created.registry,
+          profile,
+        );
+        await updateProjectSummaryAfterRun(
+          userData,
+          entry,
+          created.registry,
+          profile,
+        );
+      })();
     }
   });
   created.ledger.markInterruptedRuns("앱 종료로 중단");
@@ -447,8 +485,19 @@ function registerIpc() {
       return { runId: "paused", rejected: true as const };
     }
     const current = engine ?? (await bootEngine());
-    const summaries = await loadRecentSummaries(app.getPath("userData"));
-    const commandWithContext = enrichCommandWithContext(command, summaries);
+    const userData = app.getPath("userData");
+    const profile = await loadWorkProfile(userData);
+    const summaries = await loadRecentSummaries(userData);
+    const projectSummary = await loadProjectSummaryForCommand(
+      userData,
+      command,
+      profile,
+    );
+    const commandWithContext = enrichCommandWithContext(
+      command,
+      summaries,
+      projectSummary,
+    );
     // run은 오래 걸리므로 fire-and-forget. 진행/결과는 이벤트 스트림으로 전달.
     void current.orchestrator.run(commandWithContext);
     return { runId: "pending" };
@@ -622,11 +671,33 @@ function registerIpc() {
         return { ok: false, error: verified.error };
       }
       const current = await getLicenseState();
-      licenseState = { ...current, key: key.trim() };
+      const keys = normalizeLicenseKeys(current);
+      const trimmed = key.trim();
+      if (!keys.includes(trimmed)) keys.push(trimmed);
+      licenseState = { ...current, keys, apiRunsUsed: current.apiRunsUsed };
       await saveLicenseState(app.getPath("userData"), licenseState);
       const status = resolveLicenseStatus(licenseState);
       mainWindow?.webContents.send(IPC.licenseStatusChanged, status);
+      await pushEntitlement();
       return { ok: true, status };
+    },
+  );
+
+  ipcMain.handle(IPC.getEmployeeCatalog, () => getEmployeeCatalog());
+
+  ipcMain.handle(IPC.getEntitlement, async () =>
+    loadEntitlement(app.getPath("userData"), await getLicenseState()),
+  );
+
+  ipcMain.handle(
+    IPC.setActiveEmployees,
+    async (_event, activeSkus: EmployeeSkuId[]) => {
+      const state = await getLicenseState();
+      const entitlement = await loadEntitlement(app.getPath("userData"), state);
+      const next = buildEntitlement(entitlement.ownedSkus, activeSkus);
+      await saveActiveSkus(app.getPath("userData"), next.activeSkus);
+      mainWindow?.webContents.send(IPC.entitlementChanged, next);
+      return next;
     },
   );
 
@@ -700,6 +771,17 @@ function registerIpc() {
       );
     },
   );
+
+  ipcMain.handle(IPC.updateGetStatus, (): UpdateStatus => {
+    return (
+      autoUpdate?.getStatus() ??
+      createIdleUpdateStatus(app.getVersion())
+    );
+  });
+
+  ipcMain.handle(IPC.updateInstall, () => {
+    autoUpdate?.install();
+  });
 }
 
 async function createWindow() {
@@ -735,6 +817,13 @@ async function createWindow() {
   });
   desktop.attachWindow(mainWindow);
 
+  autoUpdate = createAutoUpdateService({
+    sendStatus: (status) => {
+      mainWindow?.webContents.send(IPC.updateStatusChanged, status);
+    },
+  });
+  autoUpdate.start();
+
   return mainWindow;
 }
 
@@ -751,6 +840,7 @@ app.whenReady().then(async () => {
   cachedSchedules = await loadSchedules();
   startScheduleTicker();
   await createWindow();
+  await pushEntitlement();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) void createWindow();
@@ -764,6 +854,7 @@ app.on("window-all-closed", () => {
 app.on("before-quit", () => {
   markAppQuitting();
   stopScheduleTicker();
+  autoUpdate?.stop();
   desktop?.destroy();
   engine?.close();
 });

@@ -11,6 +11,9 @@ import type {
 } from "../core/src/orchestration/contracts";
 import type { ProviderConfig } from "../core/src/providers/contracts";
 import type { ActionProposal } from "../shared/action-blocks";
+import type { EmployeeSku, EmployeeSkuId, Entitlement } from "../shared/employees";
+
+export type { EmployeeSku, EmployeeSkuId, Entitlement };
 
 export const IPC = {
   submitCommand: "engine:submit",
@@ -38,10 +41,17 @@ export const IPC = {
   getActionWorkspace: "actions:get-workspace",
   chooseActionWorkspace: "actions:choose-workspace",
   probeProviders: "providers:probe",
+  getEmployeeCatalog: "employees:catalog",
+  getEntitlement: "employees:entitlement",
+  setActiveEmployees: "employees:set-active",
+  updateGetStatus: "update:get-status",
+  updateInstall: "update:install",
   /** main -> renderer push */
   engineEvent: "engine:event",
   navigateTo: "app:navigate-to",
   licenseStatusChanged: "license:status-changed",
+  updateStatusChanged: "update:status-changed",
+  entitlementChanged: "employees:changed",
 } as const;
 
 export type NavigateView =
@@ -52,6 +62,7 @@ export type NavigateView =
   | "보고서"
   | "모델 라우팅"
   | "지식 & 근거"
+  | "직원 마켓"
   | "설정";
 
 export type NavigatePayload = { view: NavigateView; runId?: string };
@@ -170,6 +181,20 @@ export type ProviderProbeResult = {
   detail: string;
 };
 
+export type UpdateStatus = {
+  phase:
+    | "idle"
+    | "checking"
+    | "available"
+    | "downloading"
+    | "downloaded"
+    | "error";
+  currentVersion: string;
+  availableVersion?: string;
+  percent?: number;
+  message?: string;
+};
+
 export type RecentRun = {
   runId: string;
   command: string;
@@ -219,9 +244,16 @@ export type OfficeAIBridge = {
   getActionWorkspace(): Promise<ActionWorkspaceStatus>;
   chooseActionWorkspace(): Promise<ActionWorkspaceStatus>;
   probeProviders(): Promise<ProviderProbeResult[]>;
+  getUpdateStatus(): Promise<UpdateStatus>;
+  installUpdate(): Promise<void>;
+  getEmployeeCatalog(): Promise<EmployeeSku[]>;
+  getEntitlement(): Promise<Entitlement>;
+  setActiveEmployees(activeSkus: EmployeeSkuId[]): Promise<Entitlement>;
   onEvent(listener: (event: RunEvent) => void): () => void;
   onNavigate(listener: (payload: NavigatePayload) => void): () => void;
   onLicenseStatusChanged(listener: (status: LicenseStatus) => void): () => void;
+  onUpdateStatusChanged(listener: (status: UpdateStatus) => void): () => void;
+  onEntitlementChanged(listener: (entitlement: Entitlement) => void): () => void;
 };
 
 export type { ApprovalRequest, RunEvent, RunReport, ProviderConfig };

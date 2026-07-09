@@ -3,10 +3,12 @@ import { describe, it } from "node:test";
 import {
   buildRunSummaryText,
   enrichCommandWithContext,
+  extractCurrentCommand,
   formatContextPrefix,
   type StoredRunSummary,
 } from "../../electron/run-summaries";
-import type { RunReport } from "../../core/src/orchestration/contracts";
+import type { StoredProjectSummary } from "../src/context/hierarchical-summary";
+import type { RunReport } from "../src/orchestration/contracts";
 
 const sampleReport: RunReport = {
   runId: "run-1",
@@ -68,5 +70,31 @@ describe("run-summaries (G18 1단계)", () => {
     assert.match(enriched, /\[현재 지시\]/);
     assert.match(enriched, /새 지시/);
     assert.match(enriched, /이전 요약/);
+  });
+
+  it("extractCurrentCommand는 맥락 블록 뒤 사용자 지시만 추출한다", () => {
+    const enriched = enrichCommandWithContext("실제 지시", [
+      {
+        runId: "r",
+        command: "이전",
+        summary: "이전 요약",
+        finishedAt: "2026-07-07",
+      },
+    ]);
+    assert.equal(extractCurrentCommand(enriched), "실제 지시");
+  });
+
+  it("enrichCommandWithContext는 프로젝트 맥락을 최근 업무보다 앞에 둔다", () => {
+    const projectSummary: StoredProjectSummary = {
+      project: "OfficeAI",
+      summary: "프로젝트 진행 요약",
+      updatedAt: "2026-07-08",
+      runCount: 2,
+      lastRunIds: ["r1"],
+    };
+    const enriched = enrichCommandWithContext("새 지시", [], projectSummary);
+    assert.match(enriched, /\[프로젝트 맥락 — OfficeAI\]/);
+    assert.match(enriched, /프로젝트 진행 요약/);
+    assert.match(enriched, /\[현재 지시\]/);
   });
 });

@@ -4,6 +4,7 @@ import { ConnectionGuide } from "./ConnectionGuide";
 import { MemoryConnectionSection } from "./MemoryConnectionSection";
 import { LicenseSection } from "./LicenseSection";
 import { PrivacySection } from "./PrivacySection";
+import { TeamRosterSection } from "./TeamRosterSection";
 import { SceneOfficeSection } from "./SceneOfficeSection";
 import { ConnectionStatusSection } from "./ConnectionStatusSection";
 import { ModelTierSection } from "./ModelTierSection";
@@ -104,6 +105,7 @@ export function SettingsView() {
         </details>
         <MemoryConnectionSection />
         <LicenseSection />
+        <TeamRosterSection />
         <SceneOfficeSection />
         <div className="settings-section">
           <h2>예산</h2>
@@ -262,6 +264,8 @@ export function SettingsView() {
       <MemoryConnectionSection />
 
       <LicenseSection />
+
+      <TeamRosterSection />
 
       <SceneOfficeSection />
 

@@ -28,6 +28,10 @@ export type {
   ActionWorkspaceStatus,
   ExecuteActionResult,
   ProviderProbeResult,
+  UpdateStatus,
+  EmployeeSku,
+  EmployeeSkuId,
+  Entitlement,
 } from "../../electron/ipc-contract";
 export type {
   BudgetScopeState,

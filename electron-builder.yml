@@ -21,4 +21,7 @@ mac:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-publish: null
+publish:
+  provider: github
+  owner: BakSHyun
+  repo: OfficeAI-for-Token

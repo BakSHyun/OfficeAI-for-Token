@@ -31,6 +31,12 @@ const bridge: OfficeAIBridge = {
   getActionWorkspace: () => ipcRenderer.invoke(IPC.getActionWorkspace),
   chooseActionWorkspace: () => ipcRenderer.invoke(IPC.chooseActionWorkspace),
   probeProviders: () => ipcRenderer.invoke(IPC.probeProviders),
+  getUpdateStatus: () => ipcRenderer.invoke(IPC.updateGetStatus),
+  installUpdate: () => ipcRenderer.invoke(IPC.updateInstall),
+  getEmployeeCatalog: () => ipcRenderer.invoke(IPC.getEmployeeCatalog),
+  getEntitlement: () => ipcRenderer.invoke(IPC.getEntitlement),
+  setActiveEmployees: (activeSkus) =>
+    ipcRenderer.invoke(IPC.setActiveEmployees, activeSkus),
   onEvent: (listener) => {
     const handler = (_event: unknown, payload: RunEvent) => listener(payload);
     ipcRenderer.on(IPC.engineEvent, handler);
@@ -47,6 +53,20 @@ const bridge: OfficeAIBridge = {
       listener(payload);
     ipcRenderer.on(IPC.licenseStatusChanged, handler);
     return () => ipcRenderer.removeListener(IPC.licenseStatusChanged, handler);
+  },
+  onUpdateStatusChanged: (listener) => {
+    const handler = (_event: unknown, payload: import("./ipc-contract").UpdateStatus) =>
+      listener(payload);
+    ipcRenderer.on(IPC.updateStatusChanged, handler);
+    return () => ipcRenderer.removeListener(IPC.updateStatusChanged, handler);
+  },
+  onEntitlementChanged: (listener) => {
+    const handler = (
+      _event: unknown,
+      payload: import("./ipc-contract").Entitlement,
+    ) => listener(payload);
+    ipcRenderer.on(IPC.entitlementChanged, handler);
+    return () => ipcRenderer.removeListener(IPC.entitlementChanged, handler);
   },
 };
 

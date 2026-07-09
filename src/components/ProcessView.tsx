@@ -1,9 +1,12 @@
 import { useMemo } from "react";
-import { GitBranch } from "lucide-react";
+import { GitBranch, Lock } from "lucide-react";
 import type { PlannedUnit } from "../state/bridge-types";
 import { formatCost } from "../state/format-cost";
 import type { LiveNode } from "../state/engine-store";
 import type { RunState } from "../state/engine-store";
+import { labelExecutor } from "../../shared/role-labels";
+import { isRoleOwned } from "../../shared/entitlement";
+import { useEntitlement } from "../state/use-entitlement";
 
 type ProcessViewProps = {
   run?: RunState;
@@ -42,6 +45,7 @@ function computeLevels(units: PlannedUnit[]): Map<string, number> {
 }
 
 export function ProcessView({ run, nodes }: ProcessViewProps) {
+  const entitlement = useEntitlement();
   const views = useMemo<UnitView[]>(() => {
     if (!run?.plan) return [];
     const levels = computeLevels(run.plan.units);
@@ -118,7 +122,12 @@ export function ProcessView({ run, nodes }: ProcessViewProps) {
                     </span>
                   </div>
                   <small>
-                    {view.unit.role}
+                    {labelExecutor(view.unit.role)}
+                    {!isRoleOwned(view.unit.role, entitlement.ownedSkus) ? (
+                      <span className="dag-lock">
+                        <Lock size={11} /> 미보유
+                      </span>
+                    ) : null}
                     {view.unit.critics.length > 0
                       ? ` · 검토 ${view.unit.critics.length}명`
                       : ""}

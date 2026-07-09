@@ -30,7 +30,14 @@ Windows와 macOS 모두 **코드 사이닝 인증서는 판매자(사용자)가 
    ```
 4. notarization 없이 배포하면 Gatekeeper에서 차단될 수 있습니다.
 
-`electron-builder.yml`의 `publish`는 G3(자동 업데이트) 전까지 `null`로 둡니다.
+`electron-builder.yml`의 `publish`는 GitHub Releases(`BakSHyun/OfficeAI-for-Token`)를 가리킵니다. 릴리스 업로드 시 `GH_TOKEN`(repo 권한)이 필요합니다.
+
+```powershell
+$env:GH_TOKEN = "ghp_..."
+npm run app:package:win
+```
+
+G3 자동 업데이트는 패키징된 앱에서만 동작합니다. 개발 중에는 `OFFICEAI_DISABLE_AUTO_UPDATE=1`로 끌 수 있습니다.
 
 ---
 

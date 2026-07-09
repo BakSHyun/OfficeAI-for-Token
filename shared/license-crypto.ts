@@ -2,6 +2,7 @@ import { sign, verify } from "node:crypto";
 import {
   LICENSE_PREFIX,
   buildLicenseStatus,
+  normalizeLicenseKeys,
   type LicensePayload,
   type LicenseState,
 } from "./license-core";
@@ -85,9 +86,11 @@ export function verifyLicenseKey(key: string): VerifyLicenseResult {
 }
 
 export function resolveLicenseStatus(state: LicenseState) {
-  const verified = state.key ? verifyLicenseKey(state.key) : null;
-  if (verified?.valid) {
-    return buildLicenseStatus(state, true, verified.payload);
+  for (const key of normalizeLicenseKeys(state)) {
+    const verified = verifyLicenseKey(key);
+    if (verified.valid) {
+      return buildLicenseStatus(state, true, verified.payload);
+    }
   }
   return buildLicenseStatus(state, false);
 }

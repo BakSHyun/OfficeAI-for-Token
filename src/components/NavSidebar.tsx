@@ -8,6 +8,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Store,
 } from "lucide-react";
 import { navItems } from "../data";
 
@@ -19,6 +20,7 @@ const icons = [
   FileText,
   BrainCircuit,
   Sparkles,
+  Store,
   Settings,
 ];
 

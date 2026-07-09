@@ -21,8 +21,11 @@ import { ReportView } from "./components/ReportView";
 import { RunsView } from "./components/RunsView";
 import { ModelRoutingView } from "./components/ModelRoutingView";
 import { SettingsView } from "./components/SettingsView";
+import { MarketplaceView } from "./components/MarketplaceView";
+import { EmployeeGateBanner } from "./components/EmployeeGateBanner";
 import { licenseModeLabel, useLicenseStatus } from "./state/use-license-status";
 import { TaskInspector } from "./components/TaskInspector";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { agents as fallbackAgents } from "./data";
 
 const OfficeScene = lazy(() =>
@@ -124,6 +127,8 @@ export default function App() {
         return <ProcessView nodes={nodes} run={activeRun} />;
       case "지식 & 근거":
         return <KnowledgeView runs={engine.runs} />;
+      case "직원 마켓":
+        return <MarketplaceView />;
       case "설정":
         return <SettingsView />;
       default:
@@ -251,6 +256,11 @@ export default function App() {
           onOpenNotifications={() => setActiveNav("승인 대기")}
           onSubmit={handleCommand}
           profileSub={licenseModeLabel(licenseStatus)}
+        />
+        <UpdateBanner />
+        <EmployeeGateBanner
+          onOpenMarket={() => setActiveNav("직원 마켓")}
+          run={activeRun}
         />
         {renderView()}
       </main>

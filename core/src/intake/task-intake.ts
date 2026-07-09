@@ -45,7 +45,7 @@ function classifyCategory(command: string): WorkCategory {
   return ranked[0].category;
 }
 
-function inferProjects(command: string, profile?: WorkProfile) {
+export function inferProjectHints(command: string, profile?: WorkProfile) {
   if (!profile) return [];
   const lower = command.toLocaleLowerCase("ko-KR");
   const candidates = [
@@ -97,7 +97,7 @@ export function createTaskEnvelope(
   if (!trimmed) throw new Error("Command is empty.");
 
   const redacted = redactSensitiveText(trimmed);
-  const projectHints = inferProjects(redacted.text, profile);
+  const projectHints = inferProjectHints(redacted.text, profile);
   const category = classifyCategory(redacted.text);
   const risk = classifyRisk(redacted.text);
   const complexity = estimateComplexity(redacted.text, projectHints.length);

@@ -2768,6 +2768,53 @@ button {
   color: var(--amber) !important;
 }
 
+.onboarding-modal--wide {
+  width: min(720px, calc(100vw - 40px));
+  text-align: left;
+  justify-items: stretch;
+}
+
+.onboarding-modal--wide h1,
+.onboarding-modal--wide > svg {
+  justify-self: center;
+}
+
+.onboarding-modal--wide .onboarding-actions {
+  justify-content: center;
+}
+
+.onboarding-tier-guide {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-tier-guide li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aeb9c6;
+  font-size: 10.5px;
+}
+
+.onboarding-tier-guide li > span:last-child {
+  flex: 1;
+}
+
+.onboarding-tier-config {
+  width: 100%;
+  max-height: min(46vh, 440px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.onboarding-tier-config .settings-section {
+  margin-top: 12px;
+}
+
 .onboarding-examples {
   display: grid;
   gap: 7px;
@@ -2976,6 +3023,203 @@ button {
   .inspector-section {
     border-right: 0;
   }
+}
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 14px 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--mint-soft);
+}
+
+.update-banner-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.update-banner-copy p {
+  margin: 0;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.update-banner-copy svg {
+  color: var(--mint);
+  flex-shrink: 0;
+}
+
+.update-banner-action {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--mint);
+  color: #052317;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.update-banner-action:hover {
+  filter: brightness(1.05);
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.market-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+}
+
+.market-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.market-card-head strong {
+  font-size: 12px;
+}
+
+.market-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.market-card small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.market-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.market-card-foot em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--mint);
+}
+
+.market-badge {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.market-badge-included,
+.market-badge-owned {
+  color: var(--mint);
+  background: var(--mint-soft);
+}
+
+.market-badge-locked {
+  color: var(--muted);
+  background: rgba(132, 147, 165, 0.14);
+}
+
+.market-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.roster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roster-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-strong);
+}
+
+.roster-item strong {
+  display: block;
+  font-size: 11px;
+}
+
+.roster-item span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.roster-on {
+  color: var(--mint);
+  border-color: rgba(84, 214, 155, 0.35);
+}
+
+.employee-gate-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 14px 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--amber-soft);
+}
+
+.employee-gate-banner p {
+  margin: 0;
+  flex: 1;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.employee-gate-banner svg {
+  color: var(--amber);
+  flex-shrink: 0;
+}
+
+.dag-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  color: var(--amber);
 }
 
 @media (prefers-reduced-motion: reduce) {
